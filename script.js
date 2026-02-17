@@ -1,0 +1,143 @@
+const traitMap = { "Ionia": "アイオニア", "Arcanist": "アルカニスト", "Ixtal": "イシュタル", "Invoker": "インヴォーカー", "Vanquisher": "ヴァンキッシャー", "Void": "ヴォイド", "Gunslinger": "ガンスリンガー", "Juggernaut": "ジャガーノート", "ShadowIsles": "シャドウアイル", "Shurima": "シュリーマ", "Slayer": "スレイヤー", "Zaun": "ゾウン", "Darkin": "ダーキン", "Targon": "ターゴン", "Disruptor": "ディスラプター", "Defender": "ディフェンダー", "Demacia": "デマーシア", "Noxus": "ノクサス", "Bilgewater": "ビルジウォーター", "Piltover": "ピルトーヴァー", "Bruiser": "ブルーザー", "Freljord": "フレヨルド", "Yordle": "ヨードル", "Longshot": "ロングショット", "Warden": "ワーデン", "Speedster": "韋駄天" };
+const traitRules = { "Ionia": [3, 5, 7, 10], "Arcanist": [2, 4, 6], "Ixtal": [3, 5, 7], "Invoker": [2, 4], "Vanquisher": [2, 3, 4, 5], "Void": [2, 4, 6, 9], "Gunslinger": [2, 4], "Juggernaut": [2, 4, 6], "ShadowIsles": [2, 3, 4, 5], "Shurima": [2, 3, 4], "Slayer": [2, 4, 6], "Zaun": [3, 5, 7], "Darkin": [1, 2, 3], "Targon": [1], "Disruptor": [2, 4], "Defender": [2, 4, 6], "Demacia": [3, 5, 7, 11], "Noxus": [3, 5, 7, 10], "Bilgewater": [3, 5, 7, 10], "Piltover": [2, 4, 6], "Bruiser": [2, 4, 6], "Freljord": [3, 5, 7], "Yordle": [2, 4, 6, 8, 10], "Longshot": [2, 3, 4, 5], "Warden": [2, 3, 4, 5], "Speedster": [2, 3, 4, 5] };
+const champions = [{ name: "アニビア", traits: ["Freljord", "Invoker"], cost: 1 }, { name: "イラオイ", traits: ["Bilgewater", "Bruiser"], cost: 1 }, { name: "ヴィエゴ", traits: ["ShadowIsles", "Speedster"], cost: 1 }, { name: "キヤナ", traits: ["Ixtal", "Slayer"], cost: 1 }, { name: "ケイトリン", traits: ["Piltover", "Longshot"], cost: 1 }, { name: "コグ＝マウ", traits: ["Void", "Arcanist", "Longshot"], cost: 1 }, { name: "シェン", traits: ["Ionia", "Bruiser"], cost: 1 }, { name: "ジャーヴァンⅣ", traits: ["Demacia", "Defender"], cost: 1 }, { name: "ジン", traits: ["Ionia", "Gunslinger"], cost: 1 }, { name: "ソナ", traits: ["Demacia", "Invoker"], cost: 1 }, { name: "ブライアー", traits: ["Noxus", "Slayer", "Juggernaut"], cost: 1 }, { name: "ブリッツクランク", traits: ["Zaun", "Juggernaut"], cost: 1 }, { name: "ランブル", traits: ["Yordle", "Defender"], cost: 1 }, { name: "ルル", traits: ["Yordle", "Arcanist"], cost: 1 }, { name: "アッシュ", traits: ["Freljord", "Speedster"], cost: 2 }, { name: "アフェリオス", traits: ["Targon"], cost: 2 }, { name: "ヴァイ", traits: ["Piltover", "Zaun", "Defender"], cost: 2 }, { name: "エコー", traits: ["Zaun", "Disruptor"], cost: 2 }, { name: "サイオン", traits: ["Noxus", "Bruiser"], cost: 2 }, { name: "シン・ジャオ", traits: ["Demacia", "Ionia", "Warden"], cost: 2 }, { name: "チョ＝ガス", traits: ["Void", "Juggernaut"], cost: 2 }, { name: "ツイステッド・フェイト", traits: ["Bilgewater", "Speedster"], cost: 2 }, { name: "ティーモ", traits: ["Yordle", "Longshot"], cost: 2 }, { name: "トリスターナ", traits: ["Yordle", "Gunslinger"], cost: 2 }, { name: "ニーコ", traits: ["Ixtal", "Arcanist", "Defender"], cost: 2 }, { name: "ヤスオ", traits: ["Ionia", "Slayer"], cost: 2 }, { name: "レク＝サイ", traits: ["Void", "Vanquisher"], cost: 2 }, { name: "オリアナ", traits: ["Piltover", "Invoker"], cost: 2 }, { name: "グレイブス", traits: ["Bilgewater", "Gunslinger"], cost: 2 }, { name: "トリンダメア", traits: ["Freljord", "Slayer"], cost: 2 }, { name: "ポッピー", traits: ["Demacia", "Yordle", "Juggernaut"], cost: 2 }, { name: "ヨリック", traits: ["ShadowIsles", "Warden"], cost: 2 }, { name: "アーリ", traits: ["Ionia", "Arcanist"], cost: 3 }, { name: "ヴェイン", traits: ["Demacia", "Longshot"], cost: 3 }, { name: "ガングプランク", traits: ["Bilgewater", "Slayer", "Vanquisher"], cost: 3 }, { name: "ジンクス", traits: ["Zaun", "Gunslinger"], cost: 3 }, { name: "セジュアニ", traits: ["Freljord", "Defender"], cost: 3 }, { name: "ゾーイ", traits: ["Targon"], cost: 3 }, { name: "ドクター・ムンド", traits: ["Zaun", "Bruiser"], cost: 3 }, { name: "ドレイブン", traits: ["Noxus", "Speedster"], cost: 3 }, { name: "ノーチラス", traits: ["Bilgewater", "Juggernaut", "Warden"], cost: 3 }, { name: "マルザハール", traits: ["Void", "Disruptor"], cost: 3 }, { name: "ミリオ", traits: ["Ixtal", "Invoker"], cost: 3 }, { name: "レオナ", traits: ["Targon"], cost: 3 }, { name: "ロリス", traits: ["Piltover", "Warden"], cost: 3 }, { name: "グウェン", traits: ["ShadowIsles", "Disruptor"], cost: 3 }, { name: "ケネン", traits: ["Ionia", "Yordle", "Defender"], cost: 3 }, { name: "コブコ&ユーミ", traits: ["Yordle", "Bruiser", "Invoker"], cost: 4 }, { name: "ダリウス", traits: ["Noxus", "Defender"], cost: 4 }, { name: "ルブラン", traits: ["Noxus", "Invoker"], cost: 4 }, { name: "アンベッサ", traits: ["Noxus", "Vanquisher"], cost: 4 }, { name: "ウーコン", traits: ["Ionia", "Bruiser"], cost: 4 }, { name: "ガレン", traits: ["Demacia", "Defender"], cost: 4 }, { name: "スウェイン", traits: ["Noxus", "Arcanist", "Juggernaut"], cost: 4 }, { name: "セラフィーン", traits: ["Piltover", "Disruptor"], cost: 4 }, { name: "タリック", traits: ["Targon"], cost: 4 }, { name: "ブラウム", traits: ["Freljord", "Warden"], cost: 4 }, { name: "ベル＝ヴェス", traits: ["Void", "Slayer"], cost: 4 }, { name: "ミス・フォーチュン", traits: ["Bilgewater", "Gunslinger"], cost: 4 }, { name: "ユナラ", traits: ["Ionia", "Speedster"], cost: 4 }, { name: "ラックス", traits: ["Demacia", "Arcanist"], cost: 4 }, { name: "リサンドラ", traits: ["Freljord", "Invoker"], cost: 4 }, { name: "カイ＝サ", traits: ["Void", "Longshot"], cost: 4 }, { name: "カリスタ", traits: ["ShadowIsles", "Vanquisher"], cost: 4 }, { name: "シンジド", traits: ["Zaun", "Juggernaut"], cost: 4 }, { name: "スカーナー", traits: ["Ixtal"], cost: 4 }, { name: "ダイアナ", traits: ["Targon"], cost: 4 }, { name: "ナサス", traits: ["Shurima"], cost: 4 }, { name: "ニダリー", traits: ["Ixtal"], cost: 4 }, { name: "フィズ", traits: ["Bilgewater", "Yordle"], cost: 4 }, { name: "ベイガー", traits: ["Yordle", "Arcanist"], cost: 4 }, { name: "ヨネ", traits: ["Ionia", "Slayer"], cost: 4 }, { name: "リフトヘラルド", traits: ["Void", "Bruiser"], cost: 5 }, { name: "レネクトン", traits: ["Shurima"], cost: 5 }, { name: "ワーウィック", traits: ["Zaun", "Speedster"], cost: 5 }, { name: "アジール", traits: ["Shurima", "Disruptor"], cost: 5 }, { name: "アニー", traits: ["Arcanist"], cost: 5 }, { name: "オーン", traits: ["Warden"], cost: 5 }, { name: "キンドレッド", traits: ["Speedster"], cost: 5 }, { name: "シヴァーナ", traits: ["Juggernaut"], cost: 5 }, { name: "ジリアン", traits: ["Invoker"], cost: 5 }, { name: "フィドルスティックス", traits: ["Vanquisher"], cost: 5 }, { name: "ルシアン&セナ", traits: ["Gunslinger"], cost: 5 }, { name: "T-Hex", traits: ["Piltover", "Gunslinger"], cost: 5 }, { name: "エイトロックス", traits: ["Darkin", "Slayer"], cost: 5 }, { name: "ガリオ", traits: ["Demacia"], cost: 5 }, { name: "ジグス", traits: ["Zaun", "Yordle", "Longshot"], cost: 5 }, { name: "スレッシュ", traits: ["ShadowIsles", "Warden"], cost: 5 }, { name: "セト", traits: ["Ionia"], cost: 5 }, { name: "ゼラス", traits: ["Shurima"], cost: 5 }, { name: "タム・ケンチ", traits: ["Bilgewater", "Bruiser"], cost: 7 }, { name: "ボリベア", traits: ["Freljord", "Bruiser"], cost: 7 }, { name: "メル", traits: ["Noxus", "Disruptor"], cost: 7 }, { name: "オレリオン・ソル", traits: ["Targon"], cost: 7 }, { name: "ザーヘン", traits: ["Darkin"], cost: 7 }, { name: "サイラス", traits: ["Arcanist", "Defender"], cost: 7 }, { name: "バロンナッシャー", traits: ["Void"], cost: 7 }, { name: "ブロック", traits: ["Ixtal"], cost: 7 }];
+
+let lockedSet = new Set(), bannedSet = new Set();
+
+function init() {
+    const selects = document.querySelectorAll('.trait-select');
+    const options = Object.entries(traitMap).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+    selects.forEach(s => s.innerHTML = options);
+    document.getElementById('champList').innerHTML = champions.map(c => `<option value="${c.name}">`).join('');
+}
+
+function addRequirement() {
+    const div = document.createElement('div');
+    div.className = 'input-group';
+    div.innerHTML = `<select class="trait-select">${Object.entries(traitMap).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+        <input type="number" class="trait-count" value="1" min="1"><span>体以上</span>
+        <button class="remove" onclick="this.parentElement.remove()">×</button>`;
+    document.getElementById('requirements').appendChild(div);
+}
+
+function manageChamp(type) {
+    const input = document.getElementById('champInput');
+    const champ = champions.find(c => c.name === input.value);
+    if (!champ) return;
+    if (type === 'lock') {
+        if (!bannedSet.has(champ)) lockedSet.add(champ);
+    } else {
+        if (!lockedSet.has(champ)) bannedSet.add(champ);
+    }
+    input.value = "";
+    renderTags();
+}
+
+function renderTags() {
+    const container = document.getElementById('tagContainer');
+    container.innerHTML = '';
+    lockedSet.forEach(c => container.appendChild(createTag(c, 'locked')));
+    bannedSet.forEach(c => container.appendChild(createTag(c, 'banned')));
+}
+
+function createTag(c, type) {
+    const div = document.createElement('div');
+    div.className = `tag ${type}`;
+    div.innerHTML = `${type === 'locked' ? '★' : ''}${c.name} <button>×</button>`;
+    div.querySelector('button').onclick = () => {
+        type === 'locked' ? lockedSet.delete(c) : bannedSet.delete(c);
+        renderTags();
+    };
+    return div;
+}
+
+// --- 検索ロジック (最適化版) ---
+function runSearch() {
+    const maxLvl = parseInt(document.getElementById('maxLevel').value);
+    const reqs = Array.from(document.querySelectorAll('#requirements .input-group')).map(g => ({
+        trait: g.querySelector('.trait-select').value,
+        target: parseInt(g.querySelector('.trait-count').value)
+    }));
+
+    if (lockedSet.size > maxLvl) return alert("固定数が多すぎます");
+
+    const candidates = champions.filter(c => !bannedSet.has(c) && !lockedSet.has(c) && reqs.some(r => c.traits.includes(r.trait)));
+    const results = [];
+
+    // 探索
+    function backtrack(idx, currentTeam, currentCounts) {
+        // 条件達成チェック
+        const isSatisfied = reqs.every(r => (currentCounts[r.trait] || 0) >= r.target);
+
+        if (isSatisfied) {
+            results.push({
+                team: [...currentTeam],
+                score: calcScore(currentTeam),
+                totalCost: currentTeam.reduce((s, c) => s + c.cost, 0)
+            });
+            if (currentTeam.length === maxLvl) return;
+        }
+
+        if (currentTeam.length >= maxLvl || idx >= candidates.length) return;
+
+        // 枝刈り: 残り全員足しても届かない場合はスキップ
+        const remaining = maxLvl - currentTeam.length;
+        const canReach = reqs.every(r => {
+            const needed = r.target - (currentCounts[r.trait] || 0);
+            if (needed <= 0) return true;
+            // 候補の中でその特性を持つ残りの人数をカウント（簡易化のため省略可だが、あると爆速）
+            return true;
+        });
+        if (!canReach) return;
+
+        // 採用
+        const c = candidates[idx];
+        currentTeam.push(c);
+        c.traits.forEach(t => currentCounts[t] = (currentCounts[t] || 0) + 1);
+        backtrack(idx + 1, currentTeam, currentCounts);
+
+        // 非採用
+        c.traits.forEach(t => currentCounts[t]--);
+        currentTeam.pop();
+        backtrack(idx + 1, currentTeam, currentCounts);
+    }
+
+    const initialCounts = {};
+    lockedSet.forEach(c => c.traits.forEach(t => initialCounts[t] = (initialCounts[t] || 0) + 1));
+
+    document.getElementById('output').innerHTML = "検索中...";
+
+    // 非同期で実行してUIフリーズを防ぐ
+    setTimeout(() => {
+        backtrack(0, Array.from(lockedSet), initialCounts);
+        results.sort((a, b) => b.score - a.score || b.totalCost - a.totalCost);
+        display(results.slice(0, 20));
+    }, 50);
+}
+
+function calcScore(team) {
+    const counts = {};
+    team.forEach(c => c.traits.forEach(t => counts[t] = (counts[t] || 0) + 1));
+    return Object.entries(counts).filter(([t, count]) => count >= (traitRules[t]?.[0] || 2)).length;
+}
+
+function display(res) {
+    const out = document.getElementById('output');
+    out.innerHTML = res.length ? "" : "見つかりませんでした。";
+    res.forEach(r => {
+        const counts = {};
+        r.team.forEach(c => c.traits.forEach(t => counts[t] = (counts[t] || 0) + 1));
+        const traitHtml = Object.entries(counts).map(([t, c]) => {
+            const active = c >= (traitRules[t]?.[0] || 2);
+            return `<span class="trait-badge ${active ? 'trait-active' : 'trait-inactive'}">${traitMap[t] || t}: ${c}</span>`;
+        }).join('');
+
+        out.innerHTML += `<div class="result-card">
+            <div class="team-meta">${r.team.length}体 / ${r.totalCost}G</div>
+            <div class="champ-list">${r.team.map(c => c.name).join(" / ")}</div>
+            <div>${traitHtml}</div>
+        </div>`;
+    });
+}
+
+window.onload = init;
