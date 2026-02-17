@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TFT Team Builder V8 </title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
@@ -25,22 +25,22 @@
                 <span>体以上</span>
             </div>
         </div>
-        <button class="add" onclick="addRequirement()">+ 条件追加</button>
+        <button class="add">+ 条件追加</button>
 
         <div class="input-group" style="margin-top: 20px;">
             <input type="text" id="champInput" list="champList" placeholder="チャンピオン名">
             <datalist id="champList"></datalist>
-            <button class="lock-btn" onclick="manageChamp('lock')">固定</button>
-            <button class="ban-btn" onclick="manageChamp('ban')">除外</button>
+            <button class="lock-btn">固定</button>
+            <button class="ban-btn">除外</button>
         </div>
         <div id="tagContainer" class="tag-container"></div>
 
-        <button class="search" onclick="runSearch()">構成を検索</button>
+        <button class="search">構成を検索</button>
     </div>
 
     <div id="output"></div>
 
-    <script src="script.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 
 </html>
