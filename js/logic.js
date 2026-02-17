@@ -23,18 +23,31 @@ function getOptimizedData(champions) {
     }
 
     // 3. Convert champions to struct
-    //    { id, cost, traitsMask (if possible? no, traits are multi-value for same type? No types are unique), traitIds: [] }
-    //    Traits are unique per champ.
+    //    { id, cost, traitsMask, traitIds: [], slots, traitCounts: [] }
     const championData = champions.map((c, idx) => {
         const tIds = c.traits.map(t => traitToId[t]).filter(id => id !== undefined);
+
+        // Prepare trait counts array for this champion
+        // traitCounts[traitId] = count (usually 1, but 2 for Baron's Void)
+        const tCounts = new Int8Array(numTraits);
+        tIds.forEach(id => {
+            // Check if champion has special traitCounts
+            const traitName = c.traits.find(t => traitToId[t] === id);
+            let count = 1;
+            if (c.traitCounts && c.traitCounts[traitName]) {
+                count = c.traitCounts[traitName];
+            }
+            tCounts[id] = count;
+        });
+
         return {
             original: c,
             id: idx,
             cost: c.cost,
+            slots: c.slots || 1, // Default 1 slot
             traitIds: tIds,
+            traitCounts: tCounts, // optimization for fast add
             // Bitmask for *existence* of valid traits (for pruning check)
-            // Note: JS bitwise works on 32-bit integers. If numTraits > 32, we cannot use a single integer.
-            // Currently numTraits is ~25 (based on traitMap). So we can use 32-bit int.
             mask: tIds.reduce((m, id) => m | (1 << id), 0)
         };
     });
@@ -49,8 +62,17 @@ function calcScoreOptimized(currentCounts, thresholds) {
     // Iterating over all traits (approx 25) is fast enough.
     for (let i = 0; i < thresholds.length; i++) {
         const count = currentCounts[i];
-        if (count > 0 && count >= thresholds[i][0]) {
-            score++;
+        if (count > 0) {
+            // Find active tier
+            const tiers = thresholds[i];
+            // Since tiers are sorted [2, 4, 6, ...], simple check
+            // Optimization: could binary search but small array
+            let tierScore = 0;
+            for (let j = 0; j < tiers.length; j++) {
+                if (count >= tiers[j]) tierScore++;
+                else break;
+            }
+            score += tierScore;
         }
     }
     return score;
@@ -81,57 +103,50 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
         const currentCounts = new Int8Array(numTraits);
         const currentTeam = [];
         let currentCost = 0;
+        let currentSlots = 0;
 
         // Handle Locked Units
-        // Pre-fill currentCounts and currentTeam
         const activeLockedIds = new Set();
+        let possible = true;
 
         lockedSet.forEach(c => {
-            if (activeLockedIds.has(c)) return; // Should not happen with Set but good to be safe
-            activeLockedIds.add(c); // We need to map `c` back to optimized id? 
-            // `c` is the original champion object.
-            // We can find it in championData or just process it directly.
-            // Simpler to just process it directly to fill counts, but we need to EXCLUDE it from candidates.
+            if (activeLockedIds.has(c)) return;
+            activeLockedIds.add(c);
 
             currentTeam.push(c);
             currentCost += c.cost;
+            currentSlots += (c.slots || 1);
 
-            c.traits.forEach(t => {
-                const tid = traitToId[t];
-                if (tid !== undefined) currentCounts[tid]++;
+            // Update counts carefully
+            const tIds = c.traits.map(t => traitToId[t]).filter(id => id !== undefined);
+            tIds.forEach(id => {
+                const traitName = c.traits.find(t => traitToId[t] === id);
+                let count = 1;
+                if (c.traitCounts && c.traitCounts[traitName]) {
+                    count = c.traitCounts[traitName];
+                }
+                currentCounts[id] += count; // Use count value
             });
         });
 
-        if (currentTeam.length > maxLevel) {
+        if (currentSlots > maxLevel) {
+            // Locked units exceed max level slots
             resolve([]);
             return;
         }
 
         // Prepare Candidates
-        // Exclude banned and locked units
-        // Filter out units that don't contribute to ANY required trait if requirements exist?
-        // Actually, if we have slots left, we might want units for filler or synergy even if not efficiently contributed?
-        // But the user usually wants to minimize cost or maximize score for specific reqs.
-        // For strict Requirement satisfaction, we MUST meet requirements.
-        // Units that don't satisfy requirements might still be needed if we need body count?
-        // But assuming we want to minimal team to satisfy REQS + Maximize synergies.
-        // The original logic filtered: `reqs.some(r => c.traits.includes(r.trait))` 
-        // This implies we ONLY consider champions that contribute to at least one REQUIREMENT.
-
         const candidates = championData.filter(c => {
             if (bannedSet.has(c.original)) return false;
             if (lockedSet.has(c.original)) return false;
             if (hasRequirements) {
                 // Check if contributes to any NEEDED trait?
-                // Original logic: `reqs.some(...)`.
                 return (c.mask & neededMask) !== 0;
             }
             return true;
         });
 
         // Optimization: Suffix ORs for candidates
-        // suffixMasks[i] = OR of all masks from i to end.
-        // Allows O(1) check: can we possibly fulfill remaining needs?
         const nCandidates = candidates.length;
         const suffixMasks = new Int32Array(nCandidates + 1);
         for (let i = nCandidates - 1; i >= 0; i--) {
@@ -139,14 +154,8 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
         }
 
         const results = [];
+        // Increase max results slightly
         const MAX_RESULTS = 20;
-
-        // Current state for backtracking
-        // We use recursion. to avoid passing large arrays, we just update `currentCounts`.
-
-        // We need to track "remaining need" to check satisfaction quickly?
-        // Or just check satisfied at leaf or pruning?
-        // bitmask `unsatisfiedMask` where bit is set if trait req is not met.
 
         function getUnsatisfiedMask() {
             let mask = 0;
@@ -171,52 +180,44 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
                 return;
             }
 
-            if (currentTeam.length >= maxLevel) return;
+            // Check if we can add ANY more units
+            // Small optimization: minimal unit is 1 slot
+            if (currentSlots >= maxLevel) return;
+
             if (idx >= nCandidates) return;
 
             // Pruning:
-            // Check if remaining candidates can satisfy unsatisfied traits
-            // We check trait EXISTENCE first using bitmask
             if ((unsatisfied & suffixMasks[idx]) !== unsatisfied) {
-                // Even if we take ALL relevant remaining units, we miss some traits types entirely.
                 return;
             }
 
-            // Pruning 2: Count check (more expensive, do it only if deep?)
-            // If we need 5 more 'Ionia' but only 3 'Ionia' units left in candidates[idx..]
-            // We can precompute specific counts suffix arrays too, but that's memory heavy (25 * N).
-            // Maybe skip for now, bitmask is strong enough for "existence".
-            // However, with duplicates allowed or multi-trait, count check is specific.
-            // Since we sorted candidates? No we didn't sort.
-            // Sorting candidates by "rarity" or "traits count" might help greedy approach but BFS/DFS handles it.
-
-            // Attempt to ADD candidate[idx]
             const cand = candidates[idx];
 
-            // Optimization: Only add if it helps unsatisfied traits?
-            // If `(cand.mask & unsatisfied) === 0`, needed traits are not improved. 
-            // BUT, adding it might trigger a higher tier for a satisfied trait?
-            // User requested optimizing code, but logic should be "Find teams that satisfy REQS".
-            // So if it doesn't help with unsatisfied reqs, do we skip?
-            // If we have free slots, adding a non-helping unit increases cost without helping reqs.
-            // UNLESS it provides a trait that wasn't required but is nice to have?
-            // But results are sorted by Score. Score is total traits active.
-            // So adding ANY unit might increase score.
-            // BUT, our primary goal is to SATISFY REQS first.
-            // If we strictly follow "backtrack" logic, we try both adding and skipping.
+            // Try Adding (if slots allow)
+            if (currentSlots + cand.slots <= maxLevel) {
+                currentTeam.push(cand.original);
+                const addedTraits = cand.traitIds;
 
-            // Try Adding
-            currentTeam.push(cand.original);
-            const addedTraits = cand.traitIds;
-            for (let i = 0; i < addedTraits.length; i++) currentCounts[addedTraits[i]]++;
-            currentCost += cand.cost;
+                // Add counts using precomputed traitCounts
+                for (let i = 0; i < addedTraits.length; i++) {
+                    const id = addedTraits[i];
+                    currentCounts[id] += cand.traitCounts[id];
+                }
 
-            solve(idx + 1);
+                currentCost += cand.cost;
+                currentSlots += cand.slots;
 
-            // Backtrack
-            currentCost -= cand.cost;
-            for (let i = 0; i < addedTraits.length; i++) currentCounts[addedTraits[i]]--;
-            currentTeam.pop();
+                solve(idx + 1);
+
+                // Backtrack
+                currentSlots -= cand.slots;
+                currentCost -= cand.cost;
+                for (let i = 0; i < addedTraits.length; i++) {
+                    const id = addedTraits[i];
+                    currentCounts[id] -= cand.traitCounts[id]; // Subtract correct amount
+                }
+                currentTeam.pop();
+            }
 
             // Try Skipping
             solve(idx + 1);
@@ -224,16 +225,11 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
 
         // To yield to UI, we wrap in setTimeout
         setTimeout(() => {
-            // Sort candidates? Heuristic: units filling rarer traits first?
-            // Or units with MORE traits first?
-            // sorting candidates by cost asc or desc?
-            // Default order is fine.
-
             solve(0);
-
             // Sort results
             results.sort((a, b) => b.score - a.score || a.totalCost - b.totalCost);
-            resolve(results.slice(0, 20));
+            resolve(results.slice(0, MAX_RESULTS));
         }, 50);
     });
 }
+
