@@ -148,8 +148,32 @@ button.ban-btn {
 }
 
 
-.cost-1 { color: #324657; font-weight: bold; }
-.cost-2 { color: #0a7a2a; font-weight: bold; }
-.cost-3 { color: #2068aa; font-weight: bold; }
-.cost-4 { color: #ba1d8e; font-weight: bold; }
-.cost-5 { color: #be8902; font-weight: bold; }
+.cost-1 {
+    color: #324657;
+    font-weight: bold;
+    text-shadow: -1px -1px 0 #d0d0d0, 1px -1px 0 #d0d0d0, -1px 1px 0 #d0d0d0, 1px 1px 0 #d0d0d0;
+}
+
+.cost-2 {
+    color: #0a7a2a;
+    font-weight: bold;
+    text-shadow: -1px -1px 0 #d0d0d0, 1px -1px 0 #d0d0d0, -1px 1px 0 #d0d0d0, 1px 1px 0 #d0d0d0;
+}
+
+.cost-3 {
+    color: #2068aa;
+    font-weight: bold;
+    text-shadow: -1px -1px 0 #d0d0d0, 1px -1px 0 #d0d0d0, -1px 1px 0 #d0d0d0, 1px 1px 0 #d0d0d0;
+}
+
+.cost-4 {
+    color: #ba1d8e;
+    font-weight: bold;
+    text-shadow: -1px -1px 0 #d0d0d0, 1px -1px 0 #d0d0d0, -1px 1px 0 #d0d0d0, 1px 1px 0 #d0d0d0;
+}
+
+.cost-5 {
+    color: #be8902;
+    font-weight: bold;
+    text-shadow: -1px -1px 0 #d0d0d0, 1px -1px 0 #d0d0d0, -1px 1px 0 #d0d0d0, 1px 1px 0 #d0d0d0;
+}
