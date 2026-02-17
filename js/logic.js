@@ -1,12 +1,10 @@
-import { traitRules } from './data.js';
-
-export function calcScore(team) {
+function calcScore(team) {
     const counts = {};
     team.forEach(c => c.traits.forEach(t => counts[t] = (counts[t] || 0) + 1));
     return Object.entries(counts).filter(([t, count]) => count >= (traitRules[t]?.[0] || 2)).length;
 }
 
-export function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
+function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
     return new Promise((resolve) => {
         const candidates = champions.filter(c => !bannedSet.has(c) && !lockedSet.has(c) && reqs.some(r => c.traits.includes(r.trait)));
         const results = [];
@@ -21,13 +19,13 @@ export function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
                     score: calcScore(currentTeam),
                     totalCost: currentTeam.reduce((s, c) => s + c.cost, 0)
                 });
-                if (currentTeam.length === maxLvl) return;
+                if (currentTeam.length === maxLevel) return;
             }
 
-            if (currentTeam.length >= maxLvl || idx >= candidates.length) return;
+            if (currentTeam.length >= maxLevel || idx >= candidates.length) return;
 
             // 枝刈り: 残り全員足しても届かない場合はスキップ
-            const remaining = maxLvl - currentTeam.length;
+            const remaining = maxLevel - currentTeam.length;
             // 簡易的な枝刈りチェック
             // 正確には各reqsについて、candidatesの残りの中に必要なtraitを持つキャラが足りるか確認すべきだが
             // 元のロジックを尊重して、ここでは一旦スキップ（元コードでは `canReach` のロジックがあったがコメントアウト気味だったか？いや、実装されていた）

@@ -1,10 +1,7 @@
-import { traitMap, traitRules, champions } from './data.js';
-import { search } from './logic.js';
-
 let lockedSet = new Set();
 let bannedSet = new Set();
 
-export function initUI() {
+function initUI() {
     const selects = document.querySelectorAll('.trait-select');
     const options = Object.entries(traitMap).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
     selects.forEach(s => s.innerHTML = options);
@@ -22,7 +19,7 @@ export function initUI() {
     // BUT the plan is to clean HTML. So we will attach listeners programmatically in `bindEvents`.
 }
 
-export function bindEvents() {
+function bindEvents() {
     document.querySelector('button.add').addEventListener('click', addRequirement);
     document.querySelector('button.lock-btn').addEventListener('click', () => manageChamp('lock'));
     document.querySelector('button.ban-btn').addEventListener('click', () => manageChamp('ban'));
@@ -38,7 +35,7 @@ export function bindEvents() {
     // We can also export these or just bind them.
 }
 
-export function addRequirement() {
+function addRequirement() {
     const div = document.createElement('div');
     div.className = 'input-group';
     div.innerHTML = `<select class="trait-select">${Object.entries(traitMap).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
@@ -51,7 +48,7 @@ export function addRequirement() {
     document.getElementById('requirements').appendChild(div);
 }
 
-export function manageChamp(type) {
+function manageChamp(type) {
     const input = document.getElementById('champInput');
     const champ = champions.find(c => c.name === input.value);
     if (!champ) return;
@@ -64,7 +61,7 @@ export function manageChamp(type) {
     renderTags();
 }
 
-export function renderTags() {
+function renderTags() {
     const container = document.getElementById('tagContainer');
     container.innerHTML = '';
     lockedSet.forEach(c => container.appendChild(createTag(c, 'locked')));
@@ -82,7 +79,7 @@ function createTag(c, type) {
     return div;
 }
 
-export async function handleSearch() {
+async function handleSearch() {
     const maxLvl = parseInt(document.getElementById('maxLevel').value);
     const reqs = Array.from(document.querySelectorAll('#requirements .input-group')).map(g => ({
         trait: g.querySelector('.trait-select').value,
