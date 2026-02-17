@@ -147,7 +147,9 @@ button.ban-btn {
     border: 1px solid #4caf50;
 }
 
-.trait-inactive {
-    background-color: #424242;
-    color: #9e9e9e;
-}
+
+.cost-1 { color: #324657; font-weight: bold; }
+.cost-2 { color: #0a7a2a; font-weight: bold; }
+.cost-3 { color: #2068aa; font-weight: bold; }
+.cost-4 { color: #ba1d8e; font-weight: bold; }
+.cost-5 { color: #be8902; font-weight: bold; }
