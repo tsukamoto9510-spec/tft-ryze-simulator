@@ -193,15 +193,12 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
 
             if (unsatisfied === 0) {
                 // All requirements met!
+                // New Score Logic: Synergy Score * 10000 + Cost
+                // calcScoreOptimized returns sum of active tiers
+                const synergyScore = calcScoreOptimized(currentCounts, thresholds);
                 results.push({
                     team: [...currentTeam],
-                    // Score is inverse of cost/size to keep sort logical? 
-                    // Actually UI sorts by score desc. 
-                    // We want minimal sets to be first.
-                    // But standard logic: User wants "Strongest"? No, user asked for "Minimal".
-                    // We can just set score = 100 - size?
-                    // For now, keep somewhat compatible score but minimize 'extra'.
-                    score: 1000 - currentSlots * 10 - currentCost, // Favors fewer slots, then lower cost
+                    score: (synergyScore * 10000) + currentCost, // Favors more synergies, then higher cost
                     totalCost: currentCost
                 });
                 foundSolutionInPass = true;
@@ -300,9 +297,10 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
 
             const unsatisfied = getUnsatisfiedMask();
             if (unsatisfied === 0) {
+                const synergyScore = calcScoreOptimized(currentCounts, thresholds);
                 results.push({
                     team: [...currentTeam],
-                    score: 1000 - currentSlots * 10 - currentCost,
+                    score: (synergyScore * 10000) + currentCost,
                     totalCost: currentCost
                 });
                 return;
