@@ -149,41 +149,36 @@ button.ban-btn {
 
 
 .cost-1 {
-    color: #324657;
+    color: #d1d5db;
+    /* Light gray */
     font-weight: bold;
-    -webkit-text-stroke: 0.5px #e0e0e0;
-    paint-order: stroke fill;
-    text-shadow: none;
+    text-shadow: 0 0 5px #d1d5db, 0 0 10px rgba(209, 213, 219, 0.5);
 }
 
 .cost-2 {
-    color: #0a7a2a;
+    color: #81c784;
+    /* Light Green */
     font-weight: bold;
-    -webkit-text-stroke: 0.5px #e0e0e0;
-    paint-order: stroke fill;
-    text-shadow: none;
+    text-shadow: 0 0 5px #81c784, 0 0 10px rgba(129, 199, 132, 0.5);
 }
 
 .cost-3 {
-    color: #2068aa;
+    color: #64b5f6;
+    /* Light Blue */
     font-weight: bold;
-    -webkit-text-stroke: 0.5px #e0e0e0;
-    paint-order: stroke fill;
-    text-shadow: none;
+    text-shadow: 0 0 5px #64b5f6, 0 0 10px rgba(100, 181, 246, 0.5);
 }
 
 .cost-4 {
-    color: #ba1d8e;
+    color: #e1bee7;
+    /* Light Purple */
     font-weight: bold;
-    -webkit-text-stroke: 0.5px #e0e0e0;
-    paint-order: stroke fill;
-    text-shadow: none;
+    text-shadow: 0 0 5px #e1bee7, 0 0 10px rgba(225, 190, 231, 0.5);
 }
 
 .cost-5 {
-    color: #be8902;
+    color: #ffd54f;
+    /* Light Gold */
     font-weight: bold;
-    -webkit-text-stroke: 0.5px #e0e0e0;
-    paint-order: stroke fill;
-    text-shadow: none;
+    text-shadow: 0 0 5px #ffd54f, 0 0 10px rgba(255, 213, 79, 0.5);
 }
