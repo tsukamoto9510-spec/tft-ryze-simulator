@@ -145,8 +145,9 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
             return true;
         });
 
-        // Sort candidates by cost (ascending) to prioritize cheaper units
-        candidates.sort((a, b) => a.cost - b.cost);
+        // Sort candidates by cost (descending) to prioritize expensive (likely stronger/synergistic) units
+        // Currently we want High Cost -> High Score.
+        candidates.sort((a, b) => b.cost - a.cost);
 
         // Optimization: Suffix ORs for candidates
         const nCandidates = candidates.length;
@@ -157,7 +158,8 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
 
         const results = [];
         // Increase max results slightly
-        const MAX_RESULTS = 20;
+        // Increase max results slightly
+        const MAX_RESULTS = 50;
 
         function getUnsatisfiedMask() {
             let mask = 0;
