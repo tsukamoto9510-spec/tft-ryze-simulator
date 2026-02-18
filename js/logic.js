@@ -83,11 +83,8 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
         const { traitToId, thresholds, championData, numTraits } = getOptimizedData(champions);
 
         // Filter and Pre-process Requirements
-        // targetCounts[traitId] = target
         const neededCounts = new Int8Array(numTraits);
         let hasRequirements = false;
-
-        // Active requirements bitmask
         let neededMask = 0;
 
         reqs.forEach(r => {
@@ -107,7 +104,6 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
 
         // Handle Locked Units
         const activeLockedIds = new Set();
-
         lockedSet.forEach(c => {
             if (activeLockedIds.has(c)) return;
             activeLockedIds.add(c);
@@ -116,7 +112,6 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
             currentCost += c.cost;
             currentSlots += (c.slots || 1);
 
-            // Update counts carefully
             const tIds = c.traits.map(t => traitToId[t]).filter(id => id !== undefined);
             tIds.forEach(id => {
                 const traitName = c.traits.find(t => traitToId[t] === id);
@@ -124,12 +119,11 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
                 if (c.traitCounts && c.traitCounts[traitName]) {
                     count = c.traitCounts[traitName];
                 }
-                currentCounts[id] += count; // Use count value
+                currentCounts[id] += count;
             });
         });
 
         if (currentSlots > maxLevel) {
-            // Locked units exceed max level slots
             resolve([]);
             return;
         }
@@ -140,16 +134,23 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
             if (lockedSet.has(c.original)) return false;
             if (hasRequirements) {
                 // Check if contributes to any NEEDED trait?
+                // Minimal subset optimization: Only include units that contribute to *unmet* requirements?
+                // But requirements can be met and then we want more synregies?
+                // User said "Minimal Subset" is the goal for requirements.
+                // But we still need to allow units that satisfy *future* requirements if we add them?
+                // For now, keep the simple check: must contribute to at least one required trait
+                // UNLESS we want to fill slots with just anything? 
+                // No, the user wants "Minimal Subset" to satisfy REQS.
                 return (c.mask & neededMask) !== 0;
             }
             return true;
         });
 
-        // Sort candidates by cost (descending) to prioritize expensive (likely stronger/synergistic) units
-        // Currently we want High Cost -> High Score.
-        candidates.sort((a, b) => b.cost - a.cost);
+        // SORT candidates by Cost ASCENDING for the search.
+        // This helps find the "Cheapest Minimal" solution first within the same depth.
+        candidates.sort((a, b) => a.cost - b.cost);
 
-        // Optimization: Suffix ORs for candidates
+        // Optimization: Suffix ORs for candidates to prune branches that can't satisfy needs
         const nCandidates = candidates.length;
         const suffixMasks = new Int32Array(nCandidates + 1);
         for (let i = nCandidates - 1; i >= 0; i--) {
@@ -157,8 +158,6 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
         }
 
         const results = [];
-        // Increase max results slightly
-        // Increase max results slightly
         const MAX_RESULTS = 50;
 
         function getUnsatisfiedMask() {
@@ -171,138 +170,63 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
             return mask;
         }
 
-        // Iterative Deepening Search
-        // We try to find solutions with exact number of added units: 0, 1, 2, ...
-        // However, since units have different slots, we iterate on *slots* used?
-        // Actually, just iterating on *recursion depth* (number of added units) is often enough for "minimal subset".
-        // But to be very strict about "minimal slots", we can just iterate on maxSlots.
-        // Let's iterate on "number of additional units allowed".
-
-        // But standard backtracking with cost-sorted candidates and "return on first solution"
-        // is ALMOST good enough if we strictly limit depth.
-        // To maximize speed and minimal results, we use Iterative Deepening on *number of added units*.
-
-        let foundSolutionInPass = false;
-
-        function solve(idx, depthLimit) {
-            if (results.length >= MAX_RESULTS) return;
-            // Strict check: if we found a solution at this depth (or shallower), 
-            // we generally don't want to go much deeper unless we need more variations.
-            // But for "minimal subset", once we find ONE at depth K, we might want others at depth K,
-            // but NOT depth K+1.
-
-            const unsatisfied = getUnsatisfiedMask();
-
-            if (unsatisfied === 0) {
-                // All requirements met!
-                // New Score Logic: Synergy Score * 10000 + Cost
-                // calcScoreOptimized returns sum of active tiers
-                const synergyScore = calcScoreOptimized(currentCounts, thresholds);
-                results.push({
-                    team: [...currentTeam],
-                    score: (synergyScore * 10000) + currentCost, // Favors more synergies, then higher cost
-                    totalCost: currentCost
-                });
-                foundSolutionInPass = true;
-                return;
-            }
-
-            if (depthLimit === 0) return;
-
-            // Simple pruning
-            if (currentSlots >= maxLevel) return;
-            if (idx >= nCandidates) return;
-
-            // Suffix pruning
-            if ((unsatisfied & suffixMasks[idx]) !== unsatisfied) {
-                return;
-            }
-
-            const cand = candidates[idx];
-
-            // Try Adding
-            if (currentSlots + cand.slots <= maxLevel) {
-                currentTeam.push(cand.original);
-                const addedTraits = cand.traitIds;
-
-                for (let i = 0; i < addedTraits.length; i++) {
-                    const id = addedTraits[i];
-                    currentCounts[id] += cand.traitCounts[id];
-                }
-
-                currentCost += cand.cost;
-                currentSlots += cand.slots;
-
-                solve(idx + 1, depthLimit - 1);
-
-                // Backtrack
-                currentSlots -= cand.slots;
-                currentCost -= cand.cost;
-                for (let i = 0; i < addedTraits.length; i++) {
-                    const id = addedTraits[i];
-                    currentCounts[id] -= cand.traitCounts[id];
-                }
-                currentTeam.pop();
-            }
-
-            // Try Skipping
-            // If we skip, we can still add more units if depthLimit allows
-            // Optimization: if we skip cand[idx], can we still solve it?
-            solve(idx + 1, depthLimit); // Simply allowing skip doesn't reduce depthLimit
-            // Wait, standard Iterative Deepening on *depth* means we consume depth when we ADD.
-            // So skipping does NOT consume depth.
-            // But if we skip forever, we hit end of candidates.
-        }
+        // Iterative Deepening DFS (IDDFS)
+        // We iterate on the number of *additional* units to add.
+        // This guarantees we find solutions with 0 added units, then 1, then 2...
+        const maxAdded = maxLevel - currentSlots;
+        let foundMinimalSolution = false;
 
         // To yield to UI
         setTimeout(() => {
-            // Max additional units we can add is (maxLevel - currentSlots)
-            // But usually we find solution within 2-4 units.
-            const maxAdded = maxLevel - currentSlots;
-
-            // Iterative Deepening
+            // IDDFS Loop
             for (let depth = 0; depth <= maxAdded; depth++) {
-                // If we found solutions in previous *smaller* depth, we strictly STOP?
-                // Or do we want to show a few variations?
-                // User asked for "consistency" and "minimal". 
-                // A solution with 3 units is strictly better than 4 units for this purpose.
-
-                // Clear previous deeper results if we want strict minimal? 
-                // No, we just search layer by layer.
-
-                if (results.length > 0) break; // If we found ANY solution at depth K, stop looking at K+1.
-
-                // We need a specific solver for *exact* depth or *max* depth?
-                // Standard IDDFS uses depth-limited search (max depth).
-                // solve(0, depth);
-
-                // We need to implement a "solve with max depth k" and it will find all solutions <= k.
-                // But since we loop depth 0..max, we will rediscover depth k-1 solutions!
-                // We usually modify solver to only return solutions *at* depth k, or keep cache.
-                // Or, simply: since candidates are sorted by cost, and we check small depths first,
-                // we just run one pass with a limit?
-
-                // Let's refine: We actully just want to find solutions.
-                // The issue with the previous code was it didn't respect a "limit" and just dove deep.
-                // We will use a modified DFS that respects a `maxAddedUnits` parameter.
+                // If we found solutions at a previous depth, we STOP looking at deeper levels.
+                // This guarantees "Number of Units" is strictly minimized.
+                if (results.length > 0) break;
 
                 solve_depth_limited(0, depth);
             }
 
-            // Sort: Fewer slots > Lower Cost
-            results.sort((a, b) => b.score - a.score);
+            // Final Sort:
+            // 1. Number of Units (Ascending) - Implicitly handled by IDDFS mostly, but explicit sort is safe.
+            // 2. Trait Score (Descending) - More active traits/tiers is better.
+            // 3. Total Cost (Descending) - Expensive is better (Stronger units).
+            // Note: In search we sorted candidates by Cost ASC to find *any* solution quickly?
+            // Actually, if we want "Expensive" to be better in final sort, maybe we should search Expensive first?
+            // BUT: "Minimal Subset" usually implies "Least investment to activate". 
+            // User said: "Conditions met" > "Fewest Units" > "Score" > "Cost(High)".
+            // If we find 3 units (Cost 1,1,1) and 3 units (Cost 5,5,5), both are depth 3.
+            // IDDFS will find both if we don't return early.
+            // We should gather ALL solutions at minimal depth, then sort.
+
+            results.sort((a, b) => {
+                // 1. Number of Units (Asc)
+                if (a.team.length !== b.team.length) return a.team.length - b.team.length;
+
+                // 2. Trait Score (Desc)
+                // We need to re-calc simple score or use the one stored.
+                // Let's assume 'score' in result is Trait Score.
+                if (b.score !== a.score) return b.score - a.score;
+
+                // 3. Total Cost (Desc)
+                return b.totalCost - a.totalCost;
+            });
+
             resolve(results.slice(0, MAX_RESULTS));
         }, 50);
 
         function solve_depth_limited(idx, allowedAdds) {
-            if (results.length >= MAX_RESULTS) return;
+            // If we have enough results for this depth, maybe stop?
+            // But we want to find the BEST among this depth (High Cost/High Score).
+            // So we should probably continue searching this depth until exhaust or generous limit.
+            if (results.length >= MAX_RESULTS * 2) return;
 
             const unsatisfied = getUnsatisfiedMask();
             if (unsatisfied === 0) {
                 const synergyScore = calcScoreOptimized(currentCounts, thresholds);
                 results.push({
                     team: [...currentTeam],
-                    score: (synergyScore * 10000) + currentCost,
+                    score: synergyScore, // Pure trait score
                     totalCost: currentCost
                 });
                 return;
@@ -312,7 +236,9 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
             if (idx >= nCandidates) return;
             if (currentSlots >= maxLevel) return;
 
-            // Pruning
+            // Pruning: fast check if remaining candidates can satisfy requirements
+            // Only checks existence of traits, not counts (limitation of bitmask)
+            // But if mask doesn't even have the bit, satisfying is impossible.
             if ((unsatisfied & suffixMasks[idx]) !== unsatisfied) return;
 
             const cand = candidates[idx];
@@ -330,6 +256,7 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
 
                 solve_depth_limited(idx + 1, allowedAdds - 1);
 
+                // Backtrack
                 currentSlots -= cand.slots;
                 currentCost -= cand.cost;
                 for (let i = 0; i < addedTraits.length; i++) {
@@ -339,7 +266,7 @@ function search(maxLevel, reqs, lockedSet, bannedSet, champions) {
                 currentTeam.pop();
             }
 
-            // 2. Try Skipping (Does NOT consume allowedAdd, but moves to next candidate)
+            // 2. Try Skipping (Does NOT consume allowedAdd)
             solve_depth_limited(idx + 1, allowedAdds);
         }
     });
