@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>OGP Generator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="ogpCanvas" width="1200" height="630"></canvas>
+    <script>
+        window.onload = function () {
+            const canvas = document.getElementById('ogpCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Draw background (Deep Dark Blue Gradient)
+            const gradient = ctx.createLinearGradient(0, 0, 1200, 630);
+            gradient.addColorStop(0, '#0f172a'); // Slate 900
+            gradient.addColorStop(1, '#1e293b'); // Slate 800
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1200, 630);
+
+            // Draw some subtle pattern
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 20; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * 60);
+                ctx.lineTo(1200, i * 60 + 300);
+                ctx.stroke();
+            }
+
+            // Draw Main Title
+            ctx.fillStyle = '#f8fafc'; // Slate 50
+            ctx.font = 'bold 100px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('TFT Ryze Simulator', 600, 280);
+
+            // Draw Subtitle
+            ctx.fillStyle = '#94a3b8'; // Slate 400
+            ctx.font = '50px Arial, sans-serif';
+            ctx.fillText('Set 16 Team Planner', 600, 380);
+        };
+    </script>
+</body>
+
+</html>
