@@ -110,7 +110,8 @@ function display(res) {
             <div class="team-meta">${r.team.length}体 / ${r.totalCost}G</div>
             <div class="champ-list">${r.team.map(c => {
             const costClass = c.cost >= 5 ? 'cost-5' : `cost-${c.cost}`;
-            return `<span class="${costClass}">${c.name}</span>`;
+            const lockIcon = c.locked ? '<span class="locked-icon">🔒</span>' : '';
+            return `<span class="${costClass}">${lockIcon}${c.name}</span>`;
         }).join(" / ")}</div>
             <div>${traitHtml}</div>
         </div>`;
