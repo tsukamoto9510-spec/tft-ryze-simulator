@@ -106,14 +106,71 @@ function display(res) {
             return `<span class="trait-badge ${active ? 'trait-active' : 'trait-inactive'}">${traitMap[t] || t}: ${c}</span>`;
         }).join('');
 
-        out.innerHTML += `<div class="result-card">
-            <div class="team-meta">${r.team.length}体 / ${r.totalCost}G</div>
-            <div class="champ-list">${r.team.map(c => {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+
+        const meta = document.createElement('div');
+        meta.className = 'team-meta';
+        meta.textContent = `${r.team.length}体 / ${r.totalCost}G`;
+        card.appendChild(meta);
+
+        const champList = document.createElement('div');
+        champList.className = 'champ-list';
+
+        r.team.forEach((c, i) => {
+            if (i > 0) champList.appendChild(document.createTextNode(' / '));
+
             const costClass = c.cost >= 5 ? 'cost-5' : `cost-${c.cost}`;
-            const lockIcon = c.locked ? '<span class="locked-icon">🔒</span>' : '';
-            return `<span class="${costClass}">${lockIcon}${c.name}</span>`;
-        }).join(" / ")}</div>
-            <div>${traitHtml}</div>
-        </div>`;
+            const span = document.createElement('span');
+            span.className = costClass;
+            if (c.locked) {
+                const lockIcon = document.createElement('span');
+                lockIcon.className = 'locked-icon';
+                lockIcon.textContent = '🔒';
+                span.appendChild(lockIcon);
+            }
+            span.appendChild(document.createTextNode(c.name));
+
+            // 固定・除外済みでなければアクションボタンを表示
+            if (!lockedSet.has(c) && !bannedSet.has(c)) {
+                const lockBtn = document.createElement('button');
+                lockBtn.className = 'champ-action-btn lock';
+                lockBtn.textContent = '📌';
+                lockBtn.title = '固定';
+                lockBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    lockedSet.add(c);
+                    renderTags();
+                    // ボタンを非表示にする
+                    lockBtn.style.display = 'none';
+                    banBtn.style.display = 'none';
+                };
+
+                const banBtn = document.createElement('button');
+                banBtn.className = 'champ-action-btn ban';
+                banBtn.textContent = '🚫';
+                banBtn.title = '除外';
+                banBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    bannedSet.add(c);
+                    renderTags();
+                    lockBtn.style.display = 'none';
+                    banBtn.style.display = 'none';
+                };
+
+                span.appendChild(lockBtn);
+                span.appendChild(banBtn);
+            }
+
+            champList.appendChild(span);
+        });
+
+        card.appendChild(champList);
+
+        const traitDiv = document.createElement('div');
+        traitDiv.innerHTML = traitHtml;
+        card.appendChild(traitDiv);
+
+        out.appendChild(card);
     });
 }
