@@ -27,7 +27,7 @@
 
     <div class="controls">
         <div class="input-group">
-            <label>最大ユニット数:</label>
+            <label>最大ユニット数(Max Units):</label>
             <input type="number" id="maxLevel" value="8" min="1" max="12">
         </div>
 
@@ -35,20 +35,20 @@
             <div class="input-group">
                 <select class="trait-select"></select>
                 <input type="number" class="trait-count" value="2" min="1">
-                <span>体以上</span>
+                <span>体以上(or more)</span>
             </div>
         </div>
-        <button class="add">+ 条件追加</button>
+        <button class="add">+ 条件追加(Add Req)</button>
 
         <div class="input-group" style="margin-top: 20px;">
-            <input type="text" id="champInput" list="champList" placeholder="チャンピオン名">
+            <input type="text" id="champInput" list="champList" placeholder="チャンピオン名(Champion name)">
             <datalist id="champList"></datalist>
-            <button class="lock-btn">固定</button>
-            <button class="ban-btn">除外</button>
+            <button class="lock-btn">固定(Lock)</button>
+            <button class="ban-btn">除外(Ban)</button>
         </div>
         <div id="tagContainer" class="tag-container"></div>
 
-        <button class="search">構成を検索</button>
+        <button class="search">構成を検索(Search)</button>
     </div>
 
     <div id="output"></div>

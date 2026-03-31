@@ -39,7 +39,7 @@ function addRequirement() {
     const div = document.createElement('div');
     div.className = 'input-group';
     div.innerHTML = `<select class="trait-select">${Object.entries(traitMap).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
-        <input type="number" class="trait-count" value="1" min="1"><span>体以上</span>
+        <input type="number" class="trait-count" value="1" min="1"><span>体以上(or more)</span>
         <button class="remove">×</button>`; // Removed onclick, handled by delegation or separate bind
 
     // If not using delegation, bind click here:
@@ -86,9 +86,9 @@ async function handleSearch() {
         target: parseInt(g.querySelector('.trait-count').value)
     }));
 
-    if (lockedSet.size > maxLvl) return alert("固定数が多すぎます");
+    if (lockedSet.size > maxLvl) return alert("固定数(Locked units)が多すぎます(Too many)");
 
-    document.getElementById('output').innerHTML = "検索中...";
+    document.getElementById('output').innerHTML = "検索中...(Searching...)";
 
     // await logic
     const results = await search(maxLvl, reqs, lockedSet, bannedSet, champions);
@@ -97,7 +97,7 @@ async function handleSearch() {
 
 function display(res) {
     const out = document.getElementById('output');
-    out.innerHTML = res.length ? "" : "見つかりませんでした。";
+    out.innerHTML = res.length ? "" : "見つかりませんでした。(Not found.)";
     res.forEach(r => {
         const counts = {};
         r.team.forEach(c => c.traits.forEach(t => counts[t] = (counts[t] || 0) + 1));
@@ -135,8 +135,8 @@ function display(res) {
             if (!lockedSet.has(c) && !bannedSet.has(c)) {
                 const lockBtn = document.createElement('button');
                 lockBtn.className = 'champ-action-btn lock';
-                lockBtn.textContent = '📌';
-                lockBtn.title = '固定';
+                lockBtn.textContent = '📌(Lock)';
+                lockBtn.title = '固定(Lock)';
                 lockBtn.onclick = (e) => {
                     e.stopPropagation();
                     lockedSet.add(c);
@@ -148,8 +148,8 @@ function display(res) {
 
                 const banBtn = document.createElement('button');
                 banBtn.className = 'champ-action-btn ban';
-                banBtn.textContent = '🚫';
-                banBtn.title = '除外';
+                banBtn.textContent = '🚫(Ban)';
+                banBtn.title = '除外(Ban)';
                 banBtn.onclick = (e) => {
                     e.stopPropagation();
                     bannedSet.add(c);
