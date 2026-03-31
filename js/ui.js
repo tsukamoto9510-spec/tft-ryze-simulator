@@ -1,10 +1,25 @@
 let lockedSet = new Set();
 let bannedSet = new Set();
 
-function initUI() {
+let currentLang = 'ja';
+let lastResults = [];
+
+function getTraitName(k) {
+    return currentLang === 'ja' ? (traitMap[k] || k) : k;
+}
+
+function updateDropdowns() {
     const selects = document.querySelectorAll('.trait-select');
-    const options = Object.entries(traitMap).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
-    selects.forEach(s => s.innerHTML = options);
+    selects.forEach(s => {
+        const currentVal = s.value;
+        const options = Object.entries(traitMap).map(([k, v]) => `<option value="${k}">${getTraitName(k)}</option>`).join('');
+        s.innerHTML = options;
+        if (currentVal) s.value = currentVal;
+    });
+}
+
+function initUI() {
+    updateDropdowns();
 
     const champList = document.getElementById('champList');
     if (champList) {
@@ -25,6 +40,16 @@ function bindEvents() {
     document.querySelector('button.ban-btn').addEventListener('click', () => manageChamp('ban'));
     document.querySelector('button.search').addEventListener('click', handleSearch);
 
+    const langToggle = document.getElementById('langToggle');
+    if (langToggle) {
+        langToggle.addEventListener('click', () => {
+            currentLang = currentLang === 'ja' ? 'en' : 'ja';
+            langToggle.textContent = currentLang === 'ja' ? 'English / 日本語' : '日本語 / English';
+            updateDropdowns();
+            if (lastResults.length > 0) display(lastResults);
+        });
+    }
+
     // Delegate remove button for requirements
     document.getElementById('requirements').addEventListener('click', (e) => {
         if (e.target.classList.contains('remove')) {
@@ -38,7 +63,7 @@ function bindEvents() {
 function addRequirement() {
     const div = document.createElement('div');
     div.className = 'input-group';
-    div.innerHTML = `<select class="trait-select">${Object.entries(traitMap).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+    div.innerHTML = `<select class="trait-select">${Object.entries(traitMap).map(([k, v]) => `<option value="${k}">${getTraitName(k)}</option>`).join('')}</select>
         <input type="number" class="trait-count" value="1" min="1"><span>体以上</span>
         <button class="remove">×</button>`; // Removed onclick, handled by delegation or separate bind
 
@@ -92,6 +117,7 @@ async function handleSearch() {
 
     // await logic
     const results = await search(maxLvl, reqs, lockedSet, bannedSet, champions);
+    lastResults = results;
     display(results);
 }
 
@@ -103,7 +129,7 @@ function display(res) {
         r.team.forEach(c => c.traits.forEach(t => counts[t] = (counts[t] || 0) + 1));
         const traitHtml = Object.entries(counts).map(([t, c]) => {
             const active = c >= (traitRules[t]?.[0] || 2);
-            return `<span class="trait-badge ${active ? 'trait-active' : 'trait-inactive'}">${traitMap[t] || t}: ${c}</span>`;
+            return `<span class="trait-badge ${active ? 'trait-active' : 'trait-inactive'}">${getTraitName(t)}: ${c}</span>`;
         }).join('');
 
         const card = document.createElement('div');
