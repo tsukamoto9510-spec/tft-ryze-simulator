@@ -87,7 +87,17 @@ function generateSetData(setInfo, jaSetInfo, setNum) {
     
     // ユニーク特性を除外
     const activeTraits = enTraits.filter(t => !isUniqueTrait(t));
-    const validTraitApiNames = new Set(activeTraits.map(t => t.apiName));
+    
+    // 複数の引き方でトレイトを解決するためのマップを構築
+    // apiName → traitObj, traitKey → traitObj, name → traitObj
+    const traitByApiName = {};
+    const traitByKey = {};
+    const traitByName = {};
+    activeTraits.forEach(t => {
+        traitByApiName[t.apiName] = t;
+        traitByKey[getTraitKey(t.apiName)] = t;
+        traitByName[t.name] = t;
+    });
     
     // traitMap と traitRules を構築
     const traitMap = {};
@@ -103,16 +113,52 @@ function generateSetData(setInfo, jaSetInfo, setNum) {
     
     // チャンピオン配列を構築
     const champions = [];
+    let debugSkipped = 0;
+    let debugSampleTraits = null;
     
     enChamps.forEach(c => {
-        // チャンピオンの traits は apiName の配列
-        const champTraitApiNames = c.traits || [];
-        const champTraitKeys = champTraitApiNames
-            .filter(tApiName => validTraitApiNames.has(tApiName))
-            .map(tApiName => getTraitKey(tApiName));
+        // チャンピオンのtraitsを取得（様々な形式に対応）
+        let rawTraits = c.traits || [];
+        
+        // traitsがオブジェクトの配列の場合 [{apiName: "..."}, ...] → 文字列配列に変換
+        if (rawTraits.length > 0 && typeof rawTraits[0] === 'object') {
+            rawTraits = rawTraits.map(t => t.apiName || t.name || t.id || '');
+        }
+        
+        // 各トレイト文字列をキーに解決
+        const champTraitKeys = [];
+        rawTraits.forEach(tStr => {
+            // 1. apiName完全一致（例: "TFT17_HPTank"）
+            if (traitByApiName[tStr]) {
+                champTraitKeys.push(getTraitKey(traitByApiName[tStr].apiName));
+                return;
+            }
+            // 2. traitKey一致（例: "HPTank"）
+            if (traitByKey[tStr]) {
+                champTraitKeys.push(tStr);
+                return;
+            }
+            // 3. name一致（例: "Brawler"）
+            if (traitByName[tStr]) {
+                champTraitKeys.push(getTraitKey(traitByName[tStr].apiName));
+                return;
+            }
+            // 4. プレフィックス除去して再試行
+            const stripped = tStr.replace(/^TFT\d+_/, '');
+            if (traitByKey[stripped]) {
+                champTraitKeys.push(stripped);
+                return;
+            }
+        });
         
         // 有効な特性がないチャンピオンはスキップ
-        if (champTraitKeys.length === 0) return;
+        if (champTraitKeys.length === 0) {
+            debugSkipped++;
+            if (!debugSampleTraits && rawTraits.length > 0) {
+                debugSampleTraits = { name: c.name || c.apiName, rawTraits, champKeys: Object.keys(c).slice(0, 8) };
+            }
+            return;
+        }
         
         const enName = c.name;
         const jaName = jaChampNameMap[c.apiName] || enName;
@@ -127,7 +173,7 @@ function generateSetData(setInfo, jaSetInfo, setNum) {
     
     champions.sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name, 'ja'));
     
-    return { traitMap, traitRules, champions };
+    return { traitMap, traitRules, champions, debugSkipped, debugSampleTraits, rawChampCount: enChamps.length, rawTraitCount: enTraits.length };
 }
 
 function formatAsJS(varName, data) {
@@ -294,7 +340,17 @@ async function startFetch() {
                 const data = generateSetData(setInfo, jaSet, setNum);
                 
                 if (data.champions.length === 0) {
-                    addStatus(`⚠️ Set ${setNum} (${setName}): チャンピオン0体のためスキップ`, 'error');
+                    let debugMsg = `⚠️ Set ${setNum} (${setName}): チャンピオン0体のためスキップ`;
+                    debugMsg += `\n  元データ: ${data.rawChampCount}チャンピオン, ${data.rawTraitCount}トレイト`;
+                    debugMsg += `\n  スキップされた数: ${data.debugSkipped}`;
+                    if (data.debugSampleTraits) {
+                        debugMsg += `\n  サンプル: name="${data.debugSampleTraits.name}"`;
+                        debugMsg += `\n  traits形式: ${JSON.stringify(data.debugSampleTraits.rawTraits).substring(0, 200)}`;
+                        debugMsg += `\n  champキー: ${data.debugSampleTraits.champKeys.join(', ')}`;
+                    } else {
+                        debugMsg += `\n  (traitsデータなし or 空)`;
+                    }
+                    addStatus(debugMsg, 'error');
                     return;
                 }
                 
