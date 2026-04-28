@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head><title>TFT Data Inspector</title></head>
+<body>
+<h2>TFT CommunityDragon Data Inspector</h2>
+<pre id="output">Loading...</pre>
+<script>
+async function inspect() {
+    const out = document.getElementById('output');
+    out.textContent = 'Fetching en_us.json from CommunityDragon (1 request)...';
+    try {
+        const res = await fetch('https://raw.communitydragon.org/latest/cdragon/tft/en_us.json');
+        const data = await res.json();
+        
+        let result = 'TOP LEVEL KEYS: ' + Object.keys(data).join(', ') + '\n\n';
+        
+        const setsObj = data.sets || data.setData;
+        if (setsObj) {
+            if (Array.isArray(setsObj)) {
+                result += 'setData is ARRAY with ' + setsObj.length + ' entries\n\n';
+                setsObj.forEach((s, i) => {
+                    const champCount = s.champions ? s.champions.length : 0;
+                    const traitCount = s.traits ? s.traits.length : 0;
+                    result += `[${i}] number=${s.number}, mutator="${s.mutator}", name="${s.name || '?'}", champions=${champCount}, traits=${traitCount}\n`;
+                });
+            } else {
+                result += 'sets/setData is OBJECT\n\n';
+                for (const [key, val] of Object.entries(setsObj)) {
+                    const champCount = val.champions ? val.champions.length : 0;
+                    const traitCount = val.traits ? val.traits.length : 0;
+                    result += `${key}: name="${val.name || val.mutator || '?'}", champions=${champCount}, traits=${traitCount}\n`;
+                }
+            }
+            
+            // Sample from latest
+            const entries = Array.isArray(setsObj) ? setsObj : Object.values(setsObj);
+            const latest = entries[entries.length - 1];
+            if (latest) {
+                result += '\n=== LATEST SET ===\n';
+                result += 'number: ' + latest.number + '\n';
+                result += 'mutator: ' + latest.mutator + '\n';  
+                result += 'name: ' + latest.name + '\n';
+                if (latest.champions && latest.champions[0]) {
+                    result += '\nSample champion:\n' + JSON.stringify(latest.champions[0], null, 2) + '\n';
+                }
+                if (latest.traits) {
+                    const nonUnique = latest.traits.filter(t => t.effects && t.effects.length > 1);
+                    if (nonUnique[0]) {
+                        result += '\nSample non-unique trait:\n' + JSON.stringify(nonUnique[0], null, 2).substring(0, 1000) + '\n';
+                    }
+                }
+            }
+        } else {
+            result += 'No sets or setData key found!\n';
+            result += 'Available keys detail:\n';
+            for (const key of Object.keys(data)) {
+                const val = data[key];
+                result += `  ${key}: type=${typeof val}, isArray=${Array.isArray(val)}`;
+                if (Array.isArray(val)) result += `, length=${val.length}`;
+                result += '\n';
+            }
+        }
+        
+        out.textContent = result;
+    } catch(e) {
+        out.textContent = 'Error: ' + e.message;
+    }
+}
+inspect();
+</script>
+</body>
+</html>

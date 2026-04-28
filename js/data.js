@@ -1,3 +1,145 @@
-const traitMap = { "Ionia": "アイオニア（Ionia）", "Arcanist": "アルカニスト（Arcanist）", "Ixtal": "イシュタル（Ixtal）", "Invoker": "インヴォーカー（Invoker）", "Vanquisher": "ヴァンキッシャー（Vanquisher）", "Void": "ヴォイド（Void）", "Gunslinger": "ガンスリンガー（Gunslinger）", "Juggernaut": "ジャガーノート（Juggernaut）", "ShadowIsles": "シャドウアイル（Shadow Isles）", "Shurima": "シュリーマ（Shurima）", "Slayer": "スレイヤー（Slayer）", "Zaun": "ゾウン（Zaun）", "Darkin": "ダーキン（Darkin）", "Targon": "ターゴン（Targon）", "Disruptor": "ディスラプター（Disruptor）", "Defender": "ディフェンダー（Defender）", "Demacia": "デマーシア（Demacia）", "Noxus": "ノクサス（Noxus）", "Bilgewater": "ビルジウォーター（Bilgewater）", "Piltover": "ピルトーヴァー（Piltover）", "Bruiser": "ブルーザー（Bruiser）", "Freljord": "フレヨルド（Freljord）", "Yordle": "ヨードル（Yordle）", "Longshot": "ロングショット（Longshot）", "Warden": "ワーデン（Warden）", "Speedster": "韋駄天（Speedster）" };
-const traitRules = { "Ionia": [3, 5, 7, 10], "Arcanist": [2, 4, 6], "Ixtal": [3, 5, 7], "Invoker": [2, 4], "Vanquisher": [2, 3, 4, 5], "Void": [2, 4, 6, 9], "Gunslinger": [2, 4], "Juggernaut": [2, 4, 6], "ShadowIsles": [2, 3, 4, 5], "Shurima": [2, 3, 4], "Slayer": [2, 4, 6], "Zaun": [3, 5, 7], "Darkin": [1, 2, 3], "Targon": [1], "Disruptor": [2, 4], "Defender": [2, 4, 6], "Demacia": [3, 5, 7, 11], "Noxus": [3, 5, 7, 10], "Bilgewater": [3, 5, 7, 10], "Piltover": [2, 4, 6], "Bruiser": [2, 4, 6], "Freljord": [3, 5, 7], "Yordle": [2, 4, 6, 8, 10], "Longshot": [2, 3, 4, 5], "Warden": [2, 3, 4, 5], "Speedster": [2, 3, 4, 5] };
-const champions = [{ name: "アニビア（Anivia）", traits: ["Freljord", "Invoker"], cost: 1 }, { name: "イラオイ（Illaoi）", traits: ["Bilgewater", "Bruiser"], cost: 1 }, { name: "ヴィエゴ（Viego）", traits: ["ShadowIsles", "Speedster"], cost: 1 }, { name: "キヤナ（Qiyana）", traits: ["Ixtal", "Slayer"], cost: 1 }, { name: "ケイトリン（Caitlyn）", traits: ["Piltover", "Longshot"], cost: 1 }, { name: "コグ＝マウ（Kog'Maw）", traits: ["Void", "Arcanist", "Longshot"], cost: 1 }, { name: "シェン（Shen）", traits: ["Ionia", "Bruiser"], cost: 1 }, { name: "ジャーヴァンⅣ（Jarvan IV）", traits: ["Demacia", "Defender"], cost: 1 }, { name: "ジン（Jhin）", traits: ["Ionia", "Gunslinger"], cost: 1 }, { name: "ソナ（Sona）", traits: ["Demacia", "Invoker"], cost: 1 }, { name: "ブライアー（Briar）", traits: ["Noxus", "Slayer", "Juggernaut"], cost: 1 }, { name: "ブリッツクランク（Blitzcrank）", traits: ["Zaun", "Juggernaut"], cost: 1 }, { name: "ランブル（Rumble）", traits: ["Yordle", "Defender"], cost: 1 }, { name: "ルル（Lulu）", traits: ["Yordle", "Arcanist"], cost: 1 }, { name: "アッシュ（Ashe）", traits: ["Freljord", "Speedster"], cost: 2 }, { name: "アフェリオス（Aphelios）", traits: ["Targon"], cost: 2 }, { name: "ヴァイ（Vi）", traits: ["Piltover", "Zaun", "Defender"], cost: 2 }, { name: "エコー（Ekko）", traits: ["Zaun", "Disruptor"], cost: 2 }, { name: "サイオン（Sion）", traits: ["Noxus", "Bruiser"], cost: 2 }, { name: "シン・ジャオ（Xin Zhao）", traits: ["Demacia", "Ionia", "Warden"], cost: 2 }, { name: "チョ＝ガス（Cho'Gath）", traits: ["Void", "Juggernaut"], cost: 2 }, { name: "ツイステッド・フェイト（Twisted Fate）", traits: ["Bilgewater", "Speedster"], cost: 2 }, { name: "ティーモ（Teemo）", traits: ["Yordle", "Longshot"], cost: 2 }, { name: "トリスターナ（Tristana）", traits: ["Yordle", "Gunslinger"], cost: 2 }, { name: "ニーコ（Neeko）", traits: ["Ixtal", "Arcanist", "Defender"], cost: 2 }, { name: "ヤスオ（Yasuo）", traits: ["Ionia", "Slayer"], cost: 2 }, { name: "レク＝サイ（Rek'Sai）", traits: ["Void", "Vanquisher"], cost: 2 }, { name: "オリアナ（Orianna）", traits: ["Piltover", "Invoker"], cost: 2, locked: true }, { name: "グレイブス（Graves）", traits: ["Bilgewater", "Gunslinger"], cost: 2, locked: true }, { name: "トリンダメア（Tryndamere）", traits: ["Freljord", "Slayer"], cost: 2, locked: true }, { name: "ポッピー（Poppy）", traits: ["Demacia", "Yordle", "Juggernaut"], cost: 2, locked: true }, { name: "ヨリック（Yorick）", traits: ["ShadowIsles", "Warden"], cost: 2, locked: true }, { name: "アーリ（Ahri）", traits: ["Ionia", "Arcanist"], cost: 3 }, { name: "ヴェイン（Vayne）", traits: ["Demacia", "Longshot"], cost: 3 }, { name: "ガングプランク（Gangplank）", traits: ["Bilgewater", "Slayer", "Vanquisher"], cost: 3 }, { name: "ジンクス（Jinx）", traits: ["Zaun", "Gunslinger"], cost: 3 }, { name: "セジュアニ（Sejuani）", traits: ["Freljord", "Defender"], cost: 3 }, { name: "ゾーイ（Zoe）", traits: ["Targon"], cost: 3 }, { name: "ドクター・ムンド（Dr. Mundo）", traits: ["Zaun", "Bruiser"], cost: 3 }, { name: "ドレイブン（Draven）", traits: ["Noxus", "Speedster"], cost: 3 }, { name: "ノーチラス（Nautilus）", traits: ["Bilgewater", "Juggernaut", "Warden"], cost: 3 }, { name: "マルザハール（Malzahar）", traits: ["Void", "Disruptor"], cost: 3 }, { name: "ミリオ（Milio）", traits: ["Ixtal", "Invoker"], cost: 3 }, { name: "レオナ（Leona）", traits: ["Targon"], cost: 3 }, { name: "ロリス（Loris）", traits: ["Piltover", "Warden"], cost: 3 }, { name: "グウェン（Gwen）", traits: ["ShadowIsles", "Disruptor"], cost: 3, locked: true }, { name: "ケネン（Kennen）", traits: ["Ionia", "Yordle", "Defender"], cost: 3, locked: true }, { name: "コブコ&ユーミ（Kobuko & Yuumi）", traits: ["Yordle", "Bruiser", "Invoker"], cost: 4, locked: true }, { name: "ダリウス（Darius）", traits: ["Noxus", "Defender"], cost: 4, locked: true }, { name: "ルブラン（LeBlanc）", traits: ["Noxus", "Invoker"], cost: 4, locked: true }, { name: "アンベッサ（Ambessa）", traits: ["Noxus", "Vanquisher"], cost: 4 }, { name: "ウーコン（Wukong）", traits: ["Ionia", "Bruiser"], cost: 4 }, { name: "ガレン（Garen）", traits: ["Demacia", "Defender"], cost: 4 }, { name: "スウェイン（Swain）", traits: ["Noxus", "Arcanist", "Juggernaut"], cost: 4 }, { name: "セラフィーン（Seraphine）", traits: ["Piltover", "Disruptor"], cost: 4 }, { name: "タリック（Taric）", traits: ["Targon"], cost: 4 }, { name: "ブラウム（Braum）", traits: ["Freljord", "Warden"], cost: 4 }, { name: "ベル＝ヴェス（Bel'Veth）", traits: ["Void", "Slayer"], cost: 4 }, { name: "ミス・フォーチュン（Miss Fortune）", traits: ["Bilgewater", "Gunslinger"], cost: 4 }, { name: "ユナラ（Yunara）", traits: ["Ionia", "Speedster"], cost: 4 }, { name: "ラックス（Lux）", traits: ["Demacia", "Arcanist"], cost: 4 }, { name: "リサンドラ（Lissandra）", traits: ["Freljord", "Invoker"], cost: 4 }, { name: "カイ＝サ（Kai'Sa）", traits: ["Void", "Longshot"], cost: 4, locked: true }, { name: "カリスタ（Kalista）", traits: ["ShadowIsles", "Vanquisher"], cost: 4, locked: true }, { name: "シンジド（Singed）", traits: ["Zaun", "Juggernaut"], cost: 4, locked: true }, { name: "スカーナー（Skarner）", traits: ["Ixtal"], cost: 4, locked: true }, { name: "ダイアナ（Diana）", traits: ["Targon"], cost: 4, locked: true }, { name: "ナサス（Nasus）", traits: ["Shurima"], cost: 4, locked: true }, { name: "ニダリー（Nidalee）", traits: ["Ixtal"], cost: 4, locked: true }, { name: "フィズ（Fizz）", traits: ["Bilgewater", "Yordle"], cost: 4, locked: true }, { name: "ベイガー（Veigar）", traits: ["Yordle", "Arcanist"], cost: 4, locked: true }, { name: "ヨネ（Yone）", traits: ["Ionia", "Slayer"], cost: 4, locked: true }, { name: "リフトヘラルド（Rift Herald）", traits: ["Void", "Bruiser"], cost: 5, locked: true }, { name: "レネクトン（Renekton）", traits: ["Shurima"], cost: 5, locked: true }, { name: "ワーウィック（Warwick）", traits: ["Zaun", "Speedster"], cost: 5, locked: true }, { name: "アジール（Azir）", traits: ["Shurima", "Disruptor"], cost: 5 }, { name: "アニー（Annie）", traits: ["Arcanist"], cost: 5 }, { name: "アニー＆ティバーズ（Annie & Tibbers）", traits: ["Arcanist"], cost: 5, slots: 2, traitCounts: { "Arcanist": 2 } }, { name: "オーン（Ornn）", traits: ["Warden"], cost: 5 }, { name: "キンドレッド（Kindred）", traits: ["Speedster"], cost: 5 }, { name: "シヴァーナ（Shyvana）", traits: ["Juggernaut"], cost: 5 }, { name: "ジリアン（Zilean）", traits: ["Invoker"], cost: 5 }, { name: "フィドルスティックス（Fiddlesticks）", traits: ["Vanquisher"], cost: 5 }, { name: "ルシアン&セナ（Lucian & Senna）", traits: ["Gunslinger"], cost: 5 }, { name: "T-Hex（T-Hex）", traits: ["Piltover", "Gunslinger"], cost: 5, locked: true }, { name: "エイトロックス（Aatrox）", traits: ["Darkin", "Slayer"], cost: 5, locked: true }, { name: "ガリオ（Galio）", traits: ["Demacia"], cost: 5, slots: 0, locked: true }, { name: "ジグス（Ziggs）", traits: ["Zaun", "Yordle", "Longshot"], cost: 5, locked: true }, { name: "スレッシュ（Thresh）", traits: ["ShadowIsles", "Warden"], cost: 5, locked: true }, { name: "セト（Sett）", traits: ["Ionia"], cost: 5, locked: true }, { name: "ゼラス（Xerath）", traits: ["Shurima"], cost: 5, locked: true }, { name: "タム・ケンチ（Tahm Kench）", traits: ["Bilgewater", "Bruiser"], cost: 7, locked: true }, { name: "ボリベア（Volibear）", traits: ["Freljord", "Bruiser"], cost: 7, locked: true }, { name: "メル（Mel）", traits: ["Noxus", "Disruptor"], cost: 7, locked: true }, { name: "オレリオン・ソル（Aurelion Sol）", traits: ["Targon"], cost: 7, locked: true }, { name: "ザーヘン（Za'hen）", traits: ["Darkin"], cost: 7, locked: true }, { name: "サイラス（Sylas）", traits: ["Arcanist", "Defender"], cost: 7, locked: true }, { name: "バロンナッシャー（Baron Nashor）", traits: ["Void"], cost: 7, slots: 2, traitCounts: { "Void": 2 }, locked: true }, { name: "ブロック（Brock）", traits: ["Ixtal"], cost: 7, locked: true }];
+// ===========================================
+// TFT Set Manager - セット管理・切り替え
+// ===========================================
+
+// 利用可能なセットの定義
+// data_setXX.js が読み込まれていれば自動登録される
+const SETS = {};
+const SET_LABELS = {};
+
+function registerSet(id, label, data) {
+    SETS[id] = data;
+    SET_LABELS[id] = label;
+}
+
+// Set 16 は既存データとして常に登録
+if (typeof SET16_DATA !== 'undefined') {
+    registerSet('set16', 'Set 16 - ライズ (Ruination Rising)', SET16_DATA);
+}
+
+// Set 17 以降も読み込まれていれば登録
+if (typeof SET17_DATA !== 'undefined') {
+    registerSet('set17', 'Set 17 - Space Gods', SET17_DATA);
+}
+if (typeof SET15_DATA !== 'undefined') {
+    registerSet('set15', 'Set 15', SET15_DATA);
+}
+if (typeof SET14_DATA !== 'undefined') {
+    registerSet('set14', 'Set 14', SET14_DATA);
+}
+if (typeof SET13_DATA !== 'undefined') {
+    registerSet('set13', 'Set 13 - Into the Arcane', SET13_DATA);
+}
+if (typeof SET12_DATA !== 'undefined') {
+    registerSet('set12', 'Set 12 - Magic n\' Mayhem', SET12_DATA);
+}
+if (typeof SET11_DATA !== 'undefined') {
+    registerSet('set11', 'Set 11 - Inkborn Fables', SET11_DATA);
+}
+if (typeof SET10_DATA !== 'undefined') {
+    registerSet('set10', 'Set 10 - Remix Rumble', SET10_DATA);
+}
+if (typeof SET9_DATA !== 'undefined') {
+    registerSet('set9', 'Set 9 - Runeterra Reforged', SET9_DATA);
+}
+if (typeof SET8_DATA !== 'undefined') {
+    registerSet('set8', 'Set 8 - Monsters Attack!', SET8_DATA);
+}
+if (typeof SET7_DATA !== 'undefined') {
+    registerSet('set7', 'Set 7 - Dragonlands', SET7_DATA);
+}
+if (typeof SET6_DATA !== 'undefined') {
+    registerSet('set6', 'Set 6 - Gizmos & Gadgets', SET6_DATA);
+}
+if (typeof SET5_DATA !== 'undefined') {
+    registerSet('set5', 'Set 5 - Reckoning', SET5_DATA);
+}
+if (typeof SET4_DATA !== 'undefined') {
+    registerSet('set4', 'Set 4 - Fates', SET4_DATA);
+}
+if (typeof SET3_DATA !== 'undefined') {
+    registerSet('set3', 'Set 3 - Galaxies', SET3_DATA);
+}
+if (typeof SET2_DATA !== 'undefined') {
+    registerSet('set2', 'Set 2 - Rise of the Elements', SET2_DATA);
+}
+if (typeof SET1_DATA !== 'undefined') {
+    registerSet('set1', 'Set 1', SET1_DATA);
+}
+
+// 現在のアクティブセット
+let currentSet = null;
+
+// グローバル変数（logic.js / ui.js で参照される）
+let traitMap = {};
+let traitRules = {};
+let champions = [];
+
+// 最新セット（数字が一番大きいもの）をデフォルトにする
+function getLatestSetId() {
+    const setIds = Object.keys(SETS);
+    if (setIds.length === 0) return null;
+    return setIds.sort((a, b) => {
+        const numA = parseInt(a.replace('set', ''));
+        const numB = parseInt(b.replace('set', ''));
+        return numB - numA; // 降順
+    })[0];
+}
+
+// セット切り替え
+function switchSet(setId) {
+    if (!SETS[setId]) {
+        console.error(`Set "${setId}" is not loaded.`);
+        return;
+    }
+
+    currentSet = setId;
+    const d = SETS[setId];
+    traitMap = d.traitMap;
+    traitRules = d.traitRules;
+    champions = d.champions;
+
+    // 検索キャッシュをクリア
+    optimizedDataCache = null;
+
+    // Lock/Ban をリセット
+    lockedSet.clear();
+    bannedSet.clear();
+
+    // UIを再初期化
+    initUI();
+    renderTags();
+    document.getElementById('output').innerHTML = '';
+
+    // ドロップダウンの選択状態を更新
+    const selector = document.getElementById('setSelector');
+    if (selector) {
+        selector.value = setId;
+    }
+
+    // タイトルを更新
+    const label = SET_LABELS[setId] || setId;
+    document.querySelector('h2').textContent = `TFT 特性シミュレーター - ${label}`;
+}
+
+// セットセレクタのオプションを生成
+function populateSetSelector() {
+    const selector = document.getElementById('setSelector');
+    if (!selector) return;
+
+    selector.innerHTML = '';
+
+    // セットを番号の降順（最新が上）でソート
+    const sortedIds = Object.keys(SETS).sort((a, b) => {
+        const numA = parseInt(a.replace('set', ''));
+        const numB = parseInt(b.replace('set', ''));
+        return numB - numA;
+    });
+
+    sortedIds.forEach(id => {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = SET_LABELS[id] || id;
+        selector.appendChild(opt);
+    });
+}

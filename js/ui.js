@@ -32,6 +32,14 @@ function bindEvents() {
         }
     });
 
+    // Set selector change event
+    const setSelector = document.getElementById('setSelector');
+    if (setSelector) {
+        setSelector.addEventListener('change', (e) => {
+            switchSet(e.target.value);
+        });
+    }
+
     // We can also export these or just bind them.
 }
 

@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TFT ライズ 特性 シミュレーター V8 </title>
+    <title>TFT 特性 シミュレーター</title>
     <link rel="stylesheet" href="css/style.css">
 
     <!-- OGP Settings -->
-    <meta property="og:title" content="TFT ライズ 特性 シミュレーター V8">
-    <meta property="og:description" content="TFT Set 16 対応のチーム構築・シナジー計算ツール。">
+    <meta property="og:title" content="TFT 特性 シミュレーター">
+    <meta property="og:description" content="TFT 全セット対応のチーム構築・シナジー計算ツール。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://tft-ryze-simulator.pages.dev/">
     <meta property="og:image" content="https://tft-ryze-simulator.pages.dev/ogp.png">
@@ -23,7 +23,12 @@
 
 <body>
 
-    <h2>TFT ライズ 特性 シミュレーター V8 </h2>
+    <h2>TFT 特性 シミュレーター</h2>
+
+    <div class="set-selector-container">
+        <label for="setSelector">🎮 セット選択:</label>
+        <select id="setSelector"></select>
+    </div>
 
     <div class="controls">
         <div class="input-group">
@@ -53,6 +58,14 @@
 
     <div id="output"></div>
 
+    <!-- Data files: Set-specific data loaded first, then manager -->
+    <script src="js/data_set16.js"></script>
+    <!-- 他のセットデータファイルはここに追加 -->
+    <!-- <script src="js/data_set17.js"></script> -->
+    <!-- <script src="js/data_set15.js"></script> -->
+    <!-- etc. -->
+    
+    <!-- Set manager (must come AFTER all data_setXX.js files) -->
     <script src="js/data.js"></script>
     <script src="js/logic.js"></script>
     <script src="js/ui.js"></script>
@@ -63,16 +76,17 @@
 
         <h3 style="color: #f0e6d2; margin-top: 0;">このツールについて</h3>
         <p>
-            <strong>TFT Set 16 (Teamfight Tactics) 対応のチーム構築・シナジー計算ツール</strong>です。<br>
+            <strong>TFT (Teamfight Tactics) 対応のチーム構築・シナジー計算ツール</strong>です。<br>
             「アルカニスト4・ヨードル2・ジャガーノート2を出したいけど、誰を組み合わせればいい？」<br>
             そんな時に、条件を満たす最適なチャンピオンの組み合わせを瞬時に検索・逆引きできます。<br>
+            上部のドロップダウンからセットを切り替えて、過去のセットでもシミュレーションできます。<br>
             エンペラー、クロノテイカーといったチャンピオンの固有特性は除外されています。<br>
-            バード、ライズといった固有特性しか持たないユニットは除外されています。<br>
-            ティバーズは「アニー＆ティバーズ」という2枠でアルカニスト2つ分のユニットに変換されています。
+            バード、ライズといった固有特性しか持たないユニットは除外されています。
         </p>
 
         <h3 style="color: #f0e6d2;">使い方</h3>
         <ul style="padding-left: 20px;">
+            <li><strong>セット選択:</strong> ページ上部のドロップダウンからプレイしたいセットを選択してください。デフォルトは最新セットです。</li>
             <li><strong>シナジー条件:</strong> 「アルカニスト: 4体以上」のように欲しいシナジーを選んでください。</li>
             <li><strong>Lock機能 (固定):</strong> 「ジンクス」など、手持ちの主力を入力して「固定」ボタンを押すと、そのキャラを含めた構成のみを検索します。</li>
             <li><strong>Ban機能 (除外):</strong> 競合していて取れないキャラや、使いたくないキャラを「除外」できます。</li>
@@ -81,25 +95,27 @@
 
         <h3 style="color: #f0e6d2;">更新情報</h3>
         <p style="font-size: 0.9em; color: #888;">
-            Last Update: 2026.02.17 - Set 16 正式対応版リリース<br>
-            ・新チャンピオン / 新シナジーデータを反映<br>
-            ・Lock / Ban 機能を実装
+            Last Update: 2026.04.28 - 全セット対応版リリース<br>
+            ・セット切り替え機能を実装（ドロップダウン選択）<br>
+            ・過去セットのリバイバルモードに対応<br>
+            ・Set 16 正式対応（Lock / Ban 機能含む）
         </p>
 
         <hr style="border-color: #444; margin: 40px 0;">
 
         <h3 style="color: #f0e6d2; margin-top: 0;">About this tool</h3>
         <p>
-            This is a <strong>Team composition & synergy calculator for TFT Set 16 (Teamfight Tactics).</strong><br>
+            This is a <strong>Team composition & synergy calculator for TFT (Teamfight Tactics).</strong><br>
             "I want 4 Arcanist, 2 Yordle, and 2 Juggernaut, but who should I combine?"<br>
             In such cases, you can instantly search and find the optimal champion combinations that meet your conditions.<br>
+            Use the dropdown at the top to switch between sets for Revival mode support.<br>
             Unique traits of champions like Emperor and Chronotaker are excluded.<br>
-            Units with only unique traits like Bard and Ryze are excluded.<br>
-            Tibbers is converted into a 2-slot unit "Annie & Tibbers" that counts as two Arcanist units.
+            Units with only unique traits like Bard and Ryze are excluded.
         </p>
 
         <h3 style="color: #f0e6d2;">How to use</h3>
         <ul style="padding-left: 20px;">
+            <li><strong>Set Selection:</strong> Choose the set you want to play from the dropdown at the top. Defaults to the latest set.</li>
             <li><strong>Synergy Conditions:</strong> Select the synergies you want, such as "Arcanist: 4 or more".</li>
             <li><strong>Lock Feature:</strong> Enter your main carry, like "Jinx", and press "固定 (Fixed)" to search only for compositions that include that character.</li>
             <li><strong>Ban Feature:</strong> You can "除外 (Ban)" characters that are contested or those you do not want to use.</li>
@@ -108,9 +124,10 @@
 
         <h3 style="color: #f0e6d2;">Update Info</h3>
         <p style="font-size: 0.9em; color: #888;">
-            Last Update: 2026.02.17 - Set 16 Official Release Support<br>
-            - Reflected new champion / new synergy data<br>
-            - Implemented Lock / Ban features
+            Last Update: 2026.04.28 - All Sets Support Release<br>
+            - Implemented set switching (dropdown selection)<br>
+            - Revival mode support for past sets<br>
+            - Set 16 official support (including Lock / Ban features)
         </p>
 
         <div style="margin-top: 40px; font-size: 0.8em; color: #666; border-top: 1px solid #333; padding-top: 10px;">
