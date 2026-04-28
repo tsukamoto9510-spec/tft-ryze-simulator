@@ -140,43 +140,57 @@ function formatAsJS(varName, data) {
 
 let generatedFiles = {};
 
-// JSONからセットデータを探す（複数の構造に対応）
+// JSONからセットデータを探す（キーも一緒に返す）
 function findSets(data) {
-    // パターン1: data.sets が配列
+    // パターン1: data.sets がオブジェクト {"1": {...}, "2": {...}} 形式
+    if (data.sets && typeof data.sets === 'object' && !Array.isArray(data.sets)) {
+        return { entries: Object.entries(data.sets), source: 'sets (object)' };
+    }
+    // パターン2: data.sets が配列
     if (data.sets && Array.isArray(data.sets)) {
-        return data.sets;
+        return { entries: data.sets.map((s, i) => [String(i), s]), source: 'sets (array)' };
     }
-    // パターン2: data.sets がオブジェクト
-    if (data.sets && typeof data.sets === 'object') {
-        return Object.values(data.sets);
+    // パターン3: data.setData がオブジェクト
+    if (data.setData && typeof data.setData === 'object' && !Array.isArray(data.setData)) {
+        return { entries: Object.entries(data.setData), source: 'setData (object)' };
     }
-    // パターン3: data.setData が配列
+    // パターン4: data.setData が配列
     if (data.setData && Array.isArray(data.setData)) {
-        return data.setData;
-    }
-    // パターン4: data.setData がオブジェクト
-    if (data.setData && typeof data.setData === 'object') {
-        return Object.values(data.setData);
+        return { entries: data.setData.map((s, i) => [String(i), s]), source: 'setData (array)' };
     }
     
-    // パターン5: トップレベルのキーを探索して champions/traits を持つオブジェクトを探す
+    // パターン5: トップレベルのキーを探索
     for (const key of Object.keys(data)) {
         const val = data[key];
-        if (val && typeof val === 'object') {
-            // 配列の中にセットオブジェクトがある？
-            if (Array.isArray(val) && val.length > 0 && val[0].champions) {
-                return val;
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+            const subEntries = Object.entries(val);
+            if (subEntries.length > 0 && subEntries[0][1] && subEntries[0][1].champions) {
+                return { entries: subEntries, source: `${key} (object)` };
             }
-            // オブジェクトの値がセットデータ？
-            if (!Array.isArray(val)) {
-                const subVals = Object.values(val);
-                if (subVals.length > 0 && subVals[0] && subVals[0].champions) {
-                    return subVals;
-                }
-            }
+        }
+        if (Array.isArray(val) && val.length > 0 && val[0] && val[0].champions) {
+            return { entries: val.map((s, i) => [String(i), s]), source: `${key} (array)` };
         }
     }
     
+    return null;
+}
+
+// セット番号を推定（キー名、number、mutator等から）
+function guessSetNumber(key, setInfo) {
+    // 1. setInfo.number があればそれを使う
+    if (setInfo.number !== undefined && setInfo.number !== null) return setInfo.number;
+    // 2. キー名が数字ならそれを使う
+    const keyNum = parseInt(key);
+    if (!isNaN(keyNum)) return keyNum;
+    // 3. mutator から数字を抽出（例: "TFTSet6_Stage2" → 6）
+    if (setInfo.mutator) {
+        const m = setInfo.mutator.match(/\d+/);
+        if (m) return parseInt(m[0]);
+    }
+    // 4. キー名から数字を抽出
+    const km = key.match(/\d+/);
+    if (km) return parseInt(km[0]);
     return null;
 }
 
@@ -204,16 +218,15 @@ async function startFetch() {
         const topKeys = Object.keys(enData);
         addStatus(`📋 JSONトップレベルキー: ${topKeys.join(', ')}`, 'info');
         
-        // 各キーの型と概要を表示
         for (const key of topKeys) {
             const val = enData[key];
             let desc = `  ${key}: `;
             if (Array.isArray(val)) {
                 desc += `配列 (${val.length}要素)`;
-                if (val.length > 0) desc += ` - 最初の要素のキー: ${Object.keys(val[0]).slice(0, 5).join(', ')}`;
+                if (val.length > 0 && typeof val[0] === 'object') desc += ` - 最初の要素のキー: ${Object.keys(val[0]).slice(0, 5).join(', ')}`;
             } else if (typeof val === 'object' && val !== null) {
                 const subKeys = Object.keys(val);
-                desc += `オブジェクト (${subKeys.length}キー: ${subKeys.slice(0, 8).join(', ')}...)`;
+                desc += `オブジェクト (${subKeys.length}キー: ${subKeys.slice(0, 10).join(', ')})`;
             } else {
                 desc += typeof val;
             }
@@ -231,38 +244,50 @@ async function startFetch() {
         addStatus('✅ 全リクエスト完了。以降ネットワークアクセスなし。', 'ok');
         
         // セットデータを探す
-        const enSets = findSets(enData);
-        const jaSets = findSets(jaData);
+        const enResult = findSets(enData);
+        const jaResult = findSets(jaData);
         
-        if (!enSets || enSets.length === 0) {
-            addStatus('❌ セットデータが見つかりませんでした。JSONの構造を上で確認してください。', 'error');
+        if (!enResult) {
+            addStatus('❌ セットデータが見つかりませんでした。上の構造情報を確認してください。', 'error');
             btn.disabled = false;
             btn.textContent = '📥 再試行';
             return;
         }
         
-        const s3 = addStatus(`🔍 ${enSets.length} セットを検出...`, 'loading');
+        const enEntries = enResult.entries;
+        addStatus(`📋 セットデータ検出場所: ${enResult.source}`, 'info');
+        addStatus(`📋 セットキー一覧: ${enEntries.map(e => e[0]).join(', ')}`, 'info');
+        
+        // 最初のセットの構造を表示
+        if (enEntries.length > 0) {
+            const [firstKey, firstVal] = enEntries[0];
+            const sampleKeys = Object.keys(firstVal);
+            addStatus(`📋 最初のセット(key="${firstKey}")のキー: ${sampleKeys.join(', ')}`, 'info');
+        }
+        
+        const s3 = addStatus(`🔍 ${enEntries.length} セットを処理中...`, 'loading');
         
         // 日本語セットマップ構築
+        const jaEntries = jaResult ? jaResult.entries : [];
         const jaSetMap = {};
-        if (jaSets) {
-            jaSets.forEach(s => {
-                const key = s.number || s.mutator || '';
-                jaSetMap[key] = s;
-            });
-        }
+        jaEntries.forEach(([key, val]) => {
+            const num = guessSetNumber(key, val);
+            if (num !== null) jaSetMap[num] = val;
+            jaSetMap[key] = val; // キーでも引けるように
+        });
         
         // 各セットを処理
         let processedCount = 0;
         
-        enSets.forEach(setInfo => {
-            const setNum = setInfo.number;
-            if (setNum === undefined || setNum === null) {
-                addStatus(`⚠️ セット番号不明のエントリをスキップ: mutator=${setInfo.mutator || '?'}`, 'error');
+        enEntries.forEach(([key, setInfo]) => {
+            const setNum = guessSetNumber(key, setInfo);
+            
+            if (setNum === null) {
+                addStatus(`⚠️ セット番号推定不可: key="${key}", keys=${Object.keys(setInfo).slice(0, 5).join(',')}`, 'error');
                 return;
             }
             
-            const jaSet = jaSetMap[setNum] || jaSetMap[setInfo.mutator] || null;
+            const jaSet = jaSetMap[setNum] || jaSetMap[key] || null;
             const setName = setInfo.name || setInfo.mutator || `Set ${setNum}`;
             
             try {
