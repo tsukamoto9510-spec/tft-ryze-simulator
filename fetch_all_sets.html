@@ -6,26 +6,30 @@
     <style>
         body { font-family: sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; max-width: 1000px; margin: 0 auto; }
         h1 { color: #f0e6d2; }
-        .status { padding: 15px; background: #16213e; border-radius: 8px; margin: 10px 0; }
+        .status { padding: 15px; background: #16213e; border-radius: 8px; margin: 10px 0; white-space: pre-wrap; word-break: break-all; }
         .status.ok { border-left: 4px solid #4caf50; }
         .status.error { border-left: 4px solid #f44336; }
         .status.loading { border-left: 4px solid #ff9800; }
+        .status.info { border-left: 4px solid #2196F3; }
         button { padding: 12px 24px; font-size: 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
         button:hover { opacity: 0.8; }
         button:disabled { background: #555; cursor: not-allowed; }
         .set-output { margin: 15px 0; border: 1px solid #333; border-radius: 8px; overflow: hidden; }
-        .set-header { background: #16213e; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; }
+        .set-header { background: #16213e; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
         .set-header h3 { margin: 0; color: #f0e6d2; }
         textarea { width: 100%; height: 200px; background: #0f0f1a; color: #ddd; border: none; padding: 10px; font-family: monospace; font-size: 12px; resize: vertical; box-sizing: border-box; }
         .copy-btn { background: #4caf50; padding: 6px 12px; font-size: 13px; }
         .dl-btn { background: #ff9800; padding: 6px 12px; font-size: 13px; }
         #downloadAll { background: #e91e63; font-size: 18px; padding: 15px 30px; }
-        .info { font-size: 0.9em; color: #888; margin: 5px 0; }
+        .info-text { font-size: 0.9em; color: #888; margin: 5px 0; }
     </style>
 </head>
 <body>
     <h1>🎮 TFT 全セットデータ生成ツール</h1>
-    <p class="info">Community Dragon（公開CDN）から1回だけデータを取得し、シミュレーター用のJSファイルを生成します。</p>
+    <p class="info-text">
+        Community Dragon（公開CDN）から1回だけデータを取得し、シミュレーター用のJSファイルを生成します。<br>
+        ボタンを押すと英語・日本語データを各1回（計2回）だけリクエストします。
+    </p>
     
     <button id="fetchBtn" onclick="startFetch()">📥 データ取得開始（2リクエスト）</button>
     <button id="downloadAll" style="display:none;" onclick="downloadAllFiles()">💾 全ファイルを一括ダウンロード</button>
@@ -37,14 +41,6 @@
 const EN_URL = 'https://raw.communitydragon.org/latest/cdragon/tft/en_us.json';
 const JA_URL = 'https://raw.communitydragon.org/latest/cdragon/tft/ja_jp.json';
 
-// Traits to exclude (unique per-champion traits that only have 1 unit)
-function isUniqueTrait(trait) {
-    if (!trait.effects || trait.effects.length === 0) return true;
-    // A unique trait typically has style=4 and minUnits=1, maxUnits=25000 (or similar) with only 1 tier
-    if (trait.effects.length === 1 && trait.effects[0].minUnits === 1) return true;
-    return false;
-}
-
 function addStatus(msg, type = 'loading') {
     const div = document.createElement('div');
     div.className = `status ${type}`;
@@ -53,19 +49,27 @@ function addStatus(msg, type = 'loading') {
     return div;
 }
 
+// ユニーク特性（1体しか持たない固有特性）を判定
+function isUniqueTrait(trait) {
+    if (!trait.effects || trait.effects.length === 0) return true;
+    // style=4 かつ minUnits=1 のみ → ユニーク特性
+    if (trait.effects.length === 1 && trait.effects[0].minUnits <= 1) return true;
+    return false;
+}
+
+// トレイト発動条件（minUnits）を抽出
 function extractTraitRules(trait) {
-    // Extract thresholds: the minUnits from each tier
     const thresholds = [];
     for (const eff of trait.effects) {
         if (eff.minUnits && eff.minUnits < 25000) {
             thresholds.push(eff.minUnits);
         }
     }
-    return thresholds;
+    return [...new Set(thresholds)].sort((a, b) => a - b);
 }
 
+// "TFT17_HPTank" → "HPTank"
 function getTraitKey(apiName) {
-    // Convert "TFT17_HPTank" -> "HPTank", "TFT3_Rebel" -> "Rebel"
     return apiName.replace(/^TFT\d+_/, '');
 }
 
@@ -75,65 +79,52 @@ function generateSetData(setInfo, jaSetInfo, setNum) {
     const enChamps = setInfo.champions || [];
     const jaChamps = jaSetInfo ? (jaSetInfo.champions || []) : [];
     
-    // Build Japanese trait name map by apiName
+    // 日本語名マップ（apiName → 名前）
     const jaTraitNameMap = {};
     jaTraits.forEach(t => { jaTraitNameMap[t.apiName] = t.name; });
-    
-    // Build Japanese champion name map by apiName
     const jaChampNameMap = {};
     jaChamps.forEach(c => { jaChampNameMap[c.apiName] = c.name; });
     
-    // Filter to non-unique traits only
+    // ユニーク特性を除外
     const activeTraits = enTraits.filter(t => !isUniqueTrait(t));
+    const validTraitApiNames = new Set(activeTraits.map(t => t.apiName));
     
-    // Build traitMap and traitRules
+    // traitMap と traitRules を構築
     const traitMap = {};
     const traitRules = {};
-    const validTraitKeys = new Set();
     
     activeTraits.forEach(t => {
         const key = getTraitKey(t.apiName);
         const enName = t.name;
         const jaName = jaTraitNameMap[t.apiName] || enName;
-        
-        // Format: "日本語名（English Name）"
-        if (jaName !== enName) {
-            traitMap[key] = `${jaName}（${enName}）`;
-        } else {
-            traitMap[key] = enName;
-        }
-        
+        traitMap[key] = (jaName !== enName) ? `${jaName}（${enName}）` : enName;
         traitRules[key] = extractTraitRules(t);
-        validTraitKeys.add(t.apiName);
     });
     
-    // Build champions array
+    // チャンピオン配列を構築
     const champions = [];
-    const validTraitApiNames = new Set(activeTraits.map(t => t.apiName));
     
     enChamps.forEach(c => {
-        // Filter champion traits to only include valid (non-unique) traits
-        const champTraitKeys = (c.traits || [])
+        // チャンピオンの traits は apiName の配列
+        const champTraitApiNames = c.traits || [];
+        const champTraitKeys = champTraitApiNames
             .filter(tApiName => validTraitApiNames.has(tApiName))
             .map(tApiName => getTraitKey(tApiName));
         
-        // Skip champions with no valid traits
+        // 有効な特性がないチャンピオンはスキップ
         if (champTraitKeys.length === 0) return;
         
         const enName = c.name;
         const jaName = jaChampNameMap[c.apiName] || enName;
         const displayName = (jaName !== enName) ? `${jaName}（${enName}）` : enName;
         
-        const champObj = {
+        champions.push({
             name: displayName,
             traits: champTraitKeys,
             cost: c.cost
-        };
-        
-        champions.push(champObj);
+        });
     });
     
-    // Sort by cost, then name
     champions.sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name, 'ja'));
     
     return { traitMap, traitRules, champions };
@@ -142,23 +133,52 @@ function generateSetData(setInfo, jaSetInfo, setNum) {
 function formatAsJS(varName, data) {
     const tm = JSON.stringify(data.traitMap, null, 2);
     const tr = JSON.stringify(data.traitRules, null, 2);
+    const champLines = data.champions.map(c => `  ${JSON.stringify(c)}`).join(',\n');
     
-    // Format champions more compactly
-    const champLines = data.champions.map(c => {
-        return `  ${JSON.stringify(c)}`;
-    }).join(',\n');
-    
-    return `const ${varName} = {
-  traitMap: ${tm},
-  traitRules: ${tr},
-  champions: [
-${champLines}
-  ]
-};
-`;
+    return `const ${varName} = {\n  traitMap: ${tm},\n  traitRules: ${tr},\n  champions: [\n${champLines}\n  ]\n};\n`;
 }
 
 let generatedFiles = {};
+
+// JSONからセットデータを探す（複数の構造に対応）
+function findSets(data) {
+    // パターン1: data.sets が配列
+    if (data.sets && Array.isArray(data.sets)) {
+        return data.sets;
+    }
+    // パターン2: data.sets がオブジェクト
+    if (data.sets && typeof data.sets === 'object') {
+        return Object.values(data.sets);
+    }
+    // パターン3: data.setData が配列
+    if (data.setData && Array.isArray(data.setData)) {
+        return data.setData;
+    }
+    // パターン4: data.setData がオブジェクト
+    if (data.setData && typeof data.setData === 'object') {
+        return Object.values(data.setData);
+    }
+    
+    // パターン5: トップレベルのキーを探索して champions/traits を持つオブジェクトを探す
+    for (const key of Object.keys(data)) {
+        const val = data[key];
+        if (val && typeof val === 'object') {
+            // 配列の中にセットオブジェクトがある？
+            if (Array.isArray(val) && val.length > 0 && val[0].champions) {
+                return val;
+            }
+            // オブジェクトの値がセットデータ？
+            if (!Array.isArray(val)) {
+                const subVals = Object.values(val);
+                if (subVals.length > 0 && subVals[0] && subVals[0].champions) {
+                    return subVals;
+                }
+            }
+        }
+    }
+    
+    return null;
+}
 
 async function startFetch() {
     const btn = document.getElementById('fetchBtn');
@@ -172,48 +192,87 @@ async function startFetch() {
     generatedFiles = {};
     
     try {
-        // Fetch English data
-        const s1 = addStatus('📡 英語データ取得中（1/2）...', 'loading');
+        // 英語データ取得
+        const s1 = addStatus('📡 英語データ取得中（1/2）... これは数十秒かかります', 'loading');
         const enRes = await fetch(EN_URL);
+        if (!enRes.ok) throw new Error(`英語データ取得失敗: HTTP ${enRes.status}`);
         const enData = await enRes.json();
         s1.textContent = '✅ 英語データ取得完了';
         s1.className = 'status ok';
         
-        // Fetch Japanese data
+        // 構造をデバッグ表示
+        const topKeys = Object.keys(enData);
+        addStatus(`📋 JSONトップレベルキー: ${topKeys.join(', ')}`, 'info');
+        
+        // 各キーの型と概要を表示
+        for (const key of topKeys) {
+            const val = enData[key];
+            let desc = `  ${key}: `;
+            if (Array.isArray(val)) {
+                desc += `配列 (${val.length}要素)`;
+                if (val.length > 0) desc += ` - 最初の要素のキー: ${Object.keys(val[0]).slice(0, 5).join(', ')}`;
+            } else if (typeof val === 'object' && val !== null) {
+                const subKeys = Object.keys(val);
+                desc += `オブジェクト (${subKeys.length}キー: ${subKeys.slice(0, 8).join(', ')}...)`;
+            } else {
+                desc += typeof val;
+            }
+            addStatus(desc, 'info');
+        }
+        
+        // 日本語データ取得
         const s2 = addStatus('📡 日本語データ取得中（2/2）...', 'loading');
         const jaRes = await fetch(JA_URL);
+        if (!jaRes.ok) throw new Error(`日本語データ取得失敗: HTTP ${jaRes.status}`);
         const jaData = await jaRes.json();
         s2.textContent = '✅ 日本語データ取得完了';
         s2.className = 'status ok';
         
         addStatus('✅ 全リクエスト完了。以降ネットワークアクセスなし。', 'ok');
         
-        // Parse sets
-        const enSets = enData.sets || enData.setData || [];
-        const jaSets = jaData.sets || jaData.setData || [];
+        // セットデータを探す
+        const enSets = findSets(enData);
+        const jaSets = findSets(jaData);
         
-        const s3 = addStatus(`🔍 ${Array.isArray(enSets) ? enSets.length : Object.keys(enSets).length} セットを検出...`, 'loading');
-        
-        // Build ja lookup by set number
-        const jaSetMap = {};
-        if (Array.isArray(jaSets)) {
-            jaSets.forEach(s => { jaSetMap[s.number] = s; });
-        } else {
-            for (const [k, v] of Object.entries(jaSets)) { jaSetMap[v.number || k] = v; }
+        if (!enSets || enSets.length === 0) {
+            addStatus('❌ セットデータが見つかりませんでした。JSONの構造を上で確認してください。', 'error');
+            btn.disabled = false;
+            btn.textContent = '📥 再試行';
+            return;
         }
         
-        // Process each set
-        const setsArray = Array.isArray(enSets) ? enSets : Object.values(enSets);
+        const s3 = addStatus(`🔍 ${enSets.length} セットを検出...`, 'loading');
         
-        setsArray.forEach(setInfo => {
+        // 日本語セットマップ構築
+        const jaSetMap = {};
+        if (jaSets) {
+            jaSets.forEach(s => {
+                const key = s.number || s.mutator || '';
+                jaSetMap[key] = s;
+            });
+        }
+        
+        // 各セットを処理
+        let processedCount = 0;
+        
+        enSets.forEach(setInfo => {
             const setNum = setInfo.number;
-            if (setNum === undefined || setNum === null) return;
+            if (setNum === undefined || setNum === null) {
+                addStatus(`⚠️ セット番号不明のエントリをスキップ: mutator=${setInfo.mutator || '?'}`, 'error');
+                return;
+            }
             
-            const jaSet = jaSetMap[setNum];
-            const setName = setInfo.name || `Set ${setNum}`;
+            const jaSet = jaSetMap[setNum] || jaSetMap[setInfo.mutator] || null;
+            const setName = setInfo.name || setInfo.mutator || `Set ${setNum}`;
             
             try {
                 const data = generateSetData(setInfo, jaSet, setNum);
+                
+                if (data.champions.length === 0) {
+                    addStatus(`⚠️ Set ${setNum} (${setName}): チャンピオン0体のためスキップ`, 'error');
+                    return;
+                }
+                
                 const padNum = String(setNum).padStart(2, '0');
                 const varName = `SET${setNum}_DATA`;
                 const jsContent = formatAsJS(varName, data);
@@ -221,13 +280,12 @@ async function startFetch() {
                 
                 generatedFiles[fileName] = {
                     content: jsContent,
-                    setNum: setNum,
-                    setName: setName,
+                    setNum,
+                    setName,
                     champCount: data.champions.length,
                     traitCount: Object.keys(data.traitMap).length
                 };
                 
-                // Create output UI
                 const container = document.createElement('div');
                 container.className = 'set-output';
                 container.innerHTML = `
@@ -241,20 +299,23 @@ async function startFetch() {
                     <textarea id="ta_${padNum}" readonly>${jsContent}</textarea>
                 `;
                 outputArea.appendChild(container);
+                processedCount++;
                 
             } catch (e) {
                 addStatus(`⚠️ Set ${setNum} の処理でエラー: ${e.message}`, 'error');
             }
         });
         
-        s3.textContent = `✅ ${Object.keys(generatedFiles).length} セットのデータ生成完了！`;
+        s3.textContent = `✅ ${processedCount} セットのデータ生成完了！`;
         s3.className = 'status ok';
         
-        document.getElementById('downloadAll').style.display = 'inline-block';
+        if (processedCount > 0) {
+            document.getElementById('downloadAll').style.display = 'inline-block';
+        }
         btn.textContent = '✅ 完了';
         
     } catch(e) {
-        addStatus(`❌ エラー: ${e.message}`, 'error');
+        addStatus(`❌ エラー: ${e.message}\n${e.stack || ''}`, 'error');
         btn.disabled = false;
         btn.textContent = '📥 再試行';
     }
@@ -263,12 +324,12 @@ async function startFetch() {
 function copyText(id) {
     const ta = document.getElementById(id);
     ta.select();
-    document.execCommand('copy');
-    // Brief visual feedback
-    const btn = ta.parentElement.querySelector('.copy-btn');
-    const orig = btn.textContent;
-    btn.textContent = '✅ コピー済み';
-    setTimeout(() => btn.textContent = orig, 1500);
+    navigator.clipboard.writeText(ta.value).then(() => {
+        const btn = ta.parentElement.querySelector('.copy-btn');
+        const orig = btn.textContent;
+        btn.textContent = '✅ コピー済み';
+        setTimeout(() => btn.textContent = orig, 1500);
+    });
 }
 
 function downloadFile(fileName) {
@@ -279,14 +340,23 @@ function downloadFile(fileName) {
     const a = document.createElement('a');
     a.href = url;
     a.download = fileName;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
 
 function downloadAllFiles() {
-    for (const fileName of Object.keys(generatedFiles).sort()) {
-        downloadFile(fileName);
+    const fileNames = Object.keys(generatedFiles).sort();
+    let i = 0;
+    // 少し間隔を空けてダウンロード（ブラウザが連続DLをブロックしないように）
+    function downloadNext() {
+        if (i >= fileNames.length) return;
+        downloadFile(fileNames[i]);
+        i++;
+        setTimeout(downloadNext, 300);
     }
+    downloadNext();
 }
 </script>
 </body>
